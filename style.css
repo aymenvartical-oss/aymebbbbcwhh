@@ -22,8 +22,7 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
-/* حاسم: يضمن أن أي عنصر عليه خاصية hidden يختفي فعلاً، مهما كانت قواعد display
-   الأخرى المطبّقة عليه (هذا كان سبب مشكلة عدم فتح لوحة التحكم). */
+/* حاسم: يضمن أن أي عنصر عليه خاصية hidden يختفي فعلاً */
 [hidden] { display: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -52,7 +51,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* ===================================================================
-   Shared elements — diamond bullets & facet icons (signature motif)
+   Shared elements — diamond bullets & facet icons
    =================================================================== */
 .diamond-bullet {
   display: inline-block;
@@ -492,7 +491,7 @@ button { font-family: inherit; cursor: pointer; }
 .form-row { margin-bottom: 1.2rem; display: flex; flex-direction: column; gap: .4rem; }
 .form-row label { font-size: .85rem; color: var(--muted); font-weight: 600; }
 
-input[type="text"], input[type="number"], input[type="password"], textarea {
+input[type="text"], input[type="number"], input[type="password"], input[type="email"], textarea {
   background: var(--black);
   border: 1px solid rgba(243,236,217,.18);
   color: var(--cream);
@@ -589,6 +588,6 @@ textarea { resize: vertical; }
     border-bottom: 1px solid rgba(205,164,52,.2);
   }
   .dash-header .btn-small { padding: .45rem .8rem; font-size: .75rem; }
-  .dash-item-item, .dash-product-item { grid-template-columns: 60px 1fr; }
+  .dash-product-item { grid-template-columns: 60px 1fr; }
   .dash-item-actions { grid-column: 1 / -1; flex-direction: row; }
 }
