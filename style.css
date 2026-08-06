@@ -22,6 +22,10 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
+/* حاسم: يضمن أن أي عنصر عليه خاصية hidden يختفي فعلاً، مهما كانت قواعد display
+   الأخرى المطبّقة عليه (هذا كان سبب مشكلة عدم فتح لوحة التحكم). */
+[hidden] { display: none !important; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
@@ -339,6 +343,39 @@ button { font-family: inherit; cursor: pointer; }
 }
 .product-info .btn { width: 100%; padding: .7rem; font-size: .85rem; }
 
+.order-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-top: .3rem;
+  padding-top: .9rem;
+  border-top: 1px solid rgba(205,164,52,.14);
+}
+.order-label {
+  font-size: .78rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(205,164,52,.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-light);
+  flex-shrink: 0;
+  transition: background .2s var(--ease), color .2s var(--ease), transform .2s var(--ease), border-color .2s var(--ease);
+}
+.icon-btn svg { width: 16px; height: 16px; }
+.icon-btn:hover {
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  color: var(--black);
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
 .empty-state {
   text-align: center;
   padding: 4rem 1rem;
@@ -363,7 +400,21 @@ button { font-family: inherit; cursor: pointer; }
   text-align: center;
   border-top: 1px solid rgba(205,164,52,.14);
 }
-.contact-links { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1.6rem; }
+.contact-links {
+  display: inline-flex;
+  align-items: center;
+  gap: .8rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.6rem;
+  padding: .9rem 1.4rem;
+  background: var(--black-2);
+  border: 1px solid rgba(205,164,52,.16);
+  border-radius: 50px;
+}
+.contact-links .icon-btn { width: 40px; height: 40px; }
+.contact-links .icon-btn svg { width: 18px; height: 18px; }
+.contact-links .order-row { border-top: none; padding-top: 0; margin-top: 0; }
 
 /* ===================================================================
    Footer
