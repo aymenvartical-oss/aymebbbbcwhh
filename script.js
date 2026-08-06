@@ -4,7 +4,7 @@
    ===================================================================== */
 
 const STORAGE_KEY   = 'sacDiamantProducts';
-const ADMIN_PASSWORD = 'diamant2026'; // غيّري كلمة المرور هذه إلى ما تناسبك
+const ADMIN_PASSWORD = 'diamant'; // غيّري كلمة المرور هذه إلى ما تناسبك
 const WHATSAPP_NUMBER = '213000000000'; // ضعي رقم الواتساب الخاص بك هنا (بدون + أو 00)
 const AUTH_KEY = 'sacDiamantAdminAuth';
 const MAX_IMAGE_MB = 1.5;
