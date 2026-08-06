@@ -4,10 +4,46 @@
    ===================================================================== */
 
 const STORAGE_KEY   = 'sacDiamantProducts';
-const ADMIN_PASSWORD = 'diamant'; // غيّري كلمة المرور هذه إلى ما تناسبك
-const WHATSAPP_NUMBER = '213000000000'; // ضعي رقم الواتساب الخاص بك هنا (بدون + أو 00)
+const ADMIN_PASSWORD = 'diamant2026'; // غيّري كلمة المرور هذه إلى ما تناسبك
 const AUTH_KEY = 'sacDiamantAdminAuth';
 const MAX_IMAGE_MB = 1.5;
+
+/* ---------------------------------------------------------------------
+   روابط التواصل — عدّلي القيم الثلاث هذه فقط، وستُطبَّق تلقائياً
+   على كل بطاقة منتج وعلى قسم التواصل في أسفل الصفحة.
+   --------------------------------------------------------------------- */
+const WHATSAPP_NUMBER    = '213000000000'; // رقم الواتساب بصيغة دولية بدون + أو 00
+const FACEBOOK_USERNAME  = 'sac.diamant';  // اسم المستخدم في فيسبوك (يفتح محادثة ماسنجر مباشرة)
+const INSTAGRAM_USERNAME = 'sac.diamant';  // اسم المستخدم في إنستغرام (يفتح الصفحة الشخصية)
+
+/* أيقونات بسيطة (SVG) لكل منصة */
+const ICONS = {
+  whatsapp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.3-3.9A8 8 0 1 1 8.9 19.7L4 20Z"/><path d="M8.5 9.5c0 3 2.5 5.5 5.5 5.5.6 0 1-.4 1-1v-1l-2-1-1 1a5 5 0 0 1-2.5-2.5l1-1-1-2H9c-.6 0-.5.4-.5 1Z"/></svg>',
+  facebook: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9h2V6h-2c-1.7 0-3 1.3-3 3v2H9v3h2v6h3v-6h2.2l.8-3H14V9.3c0-.2.1-.3.3-.3Z"/><circle cx="12" cy="12" r="9.5"/></svg>',
+  instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17" cy="7" r="0.6" fill="currentColor" stroke="none"/></svg>'
+};
+
+function buildOrderLinks(product) {
+  const message = encodeURIComponent(
+    product ? `مرحباً، أرغب بطلب: ${product.name} — ${formatPrice(product.price)}` : 'مرحباً، أرغب بالاستفسار عن منتجاتكم'
+  );
+  return {
+    whatsapp: `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`,
+    facebook: `https://m.me/${FACEBOOK_USERNAME}`,
+    instagram: `https://instagram.com/${INSTAGRAM_USERNAME}`
+  };
+}
+
+function orderRowHTML(links) {
+  return `
+    <div class="order-row">
+      <span class="order-label">اطلبي عبر:</span>
+      <a class="icon-btn" href="${links.whatsapp}" target="_blank" rel="noopener" title="اطلب عبر واتساب" aria-label="اطلب عبر واتساب">${ICONS.whatsapp}</a>
+      <a class="icon-btn" href="${links.facebook}" target="_blank" rel="noopener" title="تواصل عبر فيسبوك" aria-label="تواصل عبر فيسبوك">${ICONS.facebook}</a>
+      <a class="icon-btn" href="${links.instagram}" target="_blank" rel="noopener" title="تواصل عبر إنستغرام" aria-label="تواصل عبر إنستغرام">${ICONS.instagram}</a>
+    </div>
+  `;
+}
 
 /* ---------------------------------------------------------------------
    بيانات تجريبية تظهر أول مرة فقط (احذفيها من لوحة التحكم متى شئتِ)
@@ -119,8 +155,7 @@ function renderStorefront() {
       ? `<p class="product-desc">${escapeHTML(p.description)}</p>`
       : '';
 
-    const message = encodeURIComponent(`مرحباً، أرغب بطلب: ${p.name} — ${formatPrice(p.price)}`);
-    const waLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+    const links = buildOrderLinks(p);
 
     card.innerHTML = `
       <div class="product-image">${imageHTML}</div>
@@ -128,11 +163,17 @@ function renderStorefront() {
         <h3>${escapeHTML(p.name)}</h3>
         <p class="price">${formatPrice(p.price)}</p>
         ${descHTML}
-        <a class="btn btn-gold" href="${waLink}" target="_blank" rel="noopener">اطلب عبر واتساب</a>
+        ${orderRowHTML(links)}
       </div>
     `;
     grid.appendChild(card);
   });
+}
+
+function renderContactLinks() {
+  const el = document.getElementById('contact-links');
+  if (!el) return;
+  el.innerHTML = orderRowHTML(buildOrderLinks(null));
 }
 
 function escapeHTML(str) {
@@ -361,5 +402,6 @@ function escapeAttr(str) {
 document.addEventListener('DOMContentLoaded', () => {
   initShared();
   renderStorefront();
+  renderContactLinks();
   initDashboard();
 });
