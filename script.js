@@ -1,22 +1,62 @@
 /* =====================================================================
-   SAC DIAMANT — script.js
-   يدير هذا الملف: بيانات المنتجات (تخزين محلي)، عرض المتجر، ولوحة التحكم.
+   SAC DIAMANT — script.js (مع Firebase)
    ===================================================================== */
 
-const STORAGE_KEY   = 'sacDiamantProducts';
-const ADMIN_PASSWORD = 'diamant2026'; // غيّري كلمة المرور هذه إلى ما تناسبك
-const AUTH_KEY = 'sacDiamantAdminAuth';
-const MAX_IMAGE_MB = 1.5;
+// ============================================================
+// 1. استيراد Firebase
+// ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  addDoc, 
+  deleteDoc, 
+  doc, 
+  updateDoc,
+  onSnapshot,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+  getStorage,
+  ref,
+  uploadString,
+  getDownloadURL,
+  deleteObject
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-/* ---------------------------------------------------------------------
-   روابط التواصل — عدّلي القيم الثلاث هذه فقط، وستُطبَّق تلقائياً
-   على كل بطاقة منتج وعلى قسم التواصل في أسفل الصفحة.
-   --------------------------------------------------------------------- */
-const WHATSAPP_NUMBER    = '213000000000'; // رقم الواتساب بصيغة دولية بدون + أو 00
-const FACEBOOK_USERNAME  = 'sac.diamant';  // اسم المستخدم في فيسبوك (يفتح محادثة ماسنجر مباشرة)
-const INSTAGRAM_USERNAME = 'sac.diamant';  // اسم المستخدم في إنستغرام (يفتح الصفحة الشخصية)
+// ============================================================
+// 2. إعداد Firebase
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDmDukDO-iVEOwaE2XF9PxwbFg9elplIqM",
+  authDomain: "sacdiamant-d0727.firebaseapp.com",
+  projectId: "sacdiamant-d0727",
+  storageBucket: "sacdiamant-d0727.firebasestorage.app",
+  messagingSenderId: "294321157087",
+  appId: "1:294321157087:web:c658d30429bff3e0620a6a",
+  measurementId: "G-G4J1RM3VQ6"
+};
 
-/* أيقونات بسيطة (SVG) لكل منصة */
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const auth = getAuth(app);
+
+// ============================================================
+// 3. إعدادات التواصل
+// ============================================================
+const WHATSAPP_NUMBER    = '213000000000';
+const FACEBOOK_USERNAME  = 'sac.diamant';
+const INSTAGRAM_USERNAME = 'sac.diamant';
+
 const ICONS = {
   whatsapp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.3-3.9A8 8 0 1 1 8.9 19.7L4 20Z"/><path d="M8.5 9.5c0 3 2.5 5.5 5.5 5.5.6 0 1-.4 1-1v-1l-2-1-1 1a5 5 0 0 1-2.5-2.5l1-1-1-2H9c-.6 0-.5.4-.5 1Z"/></svg>',
   facebook: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9h2V6h-2c-1.7 0-3 1.3-3 3v2H9v3h2v6h3v-6h2.2l.8-3H14V9.3c0-.2.1-.3.3-.3Z"/><circle cx="12" cy="12" r="9.5"/></svg>',
@@ -38,73 +78,110 @@ function orderRowHTML(links) {
   return `
     <div class="order-row">
       <span class="order-label">اطلبي عبر:</span>
-      <a class="icon-btn" href="${links.whatsapp}" target="_blank" rel="noopener" title="اطلب عبر واتساب" aria-label="اطلب عبر واتساب">${ICONS.whatsapp}</a>
-      <a class="icon-btn" href="${links.facebook}" target="_blank" rel="noopener" title="تواصل عبر فيسبوك" aria-label="تواصل عبر فيسبوك">${ICONS.facebook}</a>
-      <a class="icon-btn" href="${links.instagram}" target="_blank" rel="noopener" title="تواصل عبر إنستغرام" aria-label="تواصل عبر إنستغرام">${ICONS.instagram}</a>
+      <a class="icon-btn" href="${links.whatsapp}" target="_blank" rel="noopener" title="اطلب عبر واتساب">${ICONS.whatsapp}</a>
+      <a class="icon-btn" href="${links.facebook}" target="_blank" rel="noopener" title="تواصل عبر فيسبوك">${ICONS.facebook}</a>
+      <a class="icon-btn" href="${links.instagram}" target="_blank" rel="noopener" title="تواصل عبر إنستغرام">${ICONS.instagram}</a>
     </div>
   `;
 }
 
-/* ---------------------------------------------------------------------
-   بيانات تجريبية تظهر أول مرة فقط (احذفيها من لوحة التحكم متى شئتِ)
-   --------------------------------------------------------------------- */
-const SAMPLE_PRODUCTS = [
-  {
-    id: 'sample-1',
-    name: 'حقيبة يد جلدية — تصميم كلاسيكي',
-    price: 8500,
-    description: 'حقيبة جلد طبيعي بلمسة ذهبية، قياس متوسط يناسب الاستعمال اليومي.',
-    image: null
-  },
-  {
-    id: 'sample-2',
-    name: 'إكسسوار ذهبي مطلي',
-    price: 2200,
-    description: 'قطعة أنيقة تكمل أي إطلالة، مقاومة للاسوداد.',
-    image: null
-  }
-];
-
-/* ---------------------------------------------------------------------
-   طبقة التخزين
-   --------------------------------------------------------------------- */
-function getProducts() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw === null) {
-    // أول زيارة: نزرع منتجات تجريبية حتى لا يظهر المتجر فارغاً
-    saveProducts(SAMPLE_PRODUCTS);
-    return SAMPLE_PRODUCTS;
-  }
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('تعذّرت قراءة بيانات المنتجات', e);
-    return [];
-  }
-}
-
-function saveProducts(products) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-    return true;
-  } catch (e) {
-    console.error('تعذّر حفظ المنتجات (قد تكون المساحة ممتلئة)', e);
-    alert('تعذّر الحفظ — على الأرجح المساحة المحلية ممتلئة. جرّبي صورة أصغر حجماً.');
-    return false;
-  }
-}
-
+// ============================================================
+// 4. دوال مساعدة
+// ============================================================
 function formatPrice(price) {
   return Number(price).toLocaleString('ar-DZ') + ' د.ج';
 }
 
-function uid() {
-  return 'p-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
 }
 
-/* ---------------------------------------------------------------------
-   عناصر مشتركة (السنة في الفوتر + قائمة الجوال)
-   --------------------------------------------------------------------- */
+function escapeAttr(str) {
+  return escapeHTML(str).replace(/"/g, '&quot;');
+}
+
+// ============================================================
+// 5. دوال Firebase
+// ============================================================
+
+// الاستماع المباشر للمنتجات
+function listenToProducts(callback) {
+  const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const products = [];
+    snapshot.forEach((doc) => {
+      products.push({ id: doc.id, ...doc.data() });
+    });
+    callback(products);
+  });
+}
+
+// إضافة منتج
+async function addProduct(productData) {
+  try {
+    const docRef = await addDoc(collection(db, "products"), {
+      ...productData,
+      createdAt: new Date().toISOString()
+    });
+    return { success: true, id: docRef.id };
+  } catch (error) {
+    console.error("خطأ في إضافة المنتج:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// تحديث منتج
+async function updateProduct(productId, data) {
+  try {
+    await updateDoc(doc(db, "products", productId), data);
+    return { success: true };
+  } catch (error) {
+    console.error("خطأ في تحديث المنتج:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// حذف منتج
+async function deleteProduct(productId) {
+  try {
+    await deleteDoc(doc(db, "products", productId));
+    return { success: true };
+  } catch (error) {
+    console.error("خطأ في حذف المنتج:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// رفع صورة
+async function uploadImage(productId, imageDataUrl) {
+  try {
+    const storageRef = ref(storage, `products/${productId}/image.jpg`);
+    await uploadString(storageRef, imageDataUrl, 'data_url');
+    const downloadURL = await getDownloadURL(storageRef);
+    return { success: true, url: downloadURL };
+  } catch (error) {
+    console.error("خطأ في رفع الصورة:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// حذف صورة
+async function deleteImage(productId) {
+  try {
+    const storageRef = ref(storage, `products/${productId}/image.jpg`);
+    await deleteObject(storageRef);
+    return { success: true };
+  } catch (error) {
+    console.error("خطأ في حذف الصورة:", error);
+    return { success: false };
+  }
+}
+
+// ============================================================
+// 6. عناصر مشتركة
+// ============================================================
 function initShared() {
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
@@ -125,19 +202,18 @@ function initShared() {
   }
 }
 
-/* =======================================================================
-   واجهة المتجر (index.html)
-   ======================================================================= */
-function renderStorefront() {
+// ============================================================
+// 7. المتجر (index.html)
+// ============================================================
+function renderStorefront(products) {
   const grid = document.getElementById('product-grid');
-  if (!grid) return; // لسنا في صفحة المتجر
+  if (!grid) return;
 
   const emptyState = document.getElementById('empty-state');
-  const products = getProducts();
 
   grid.innerHTML = '';
 
-  if (!products.length) {
+  if (!products || !products.length) {
     if (emptyState) emptyState.hidden = false;
     return;
   }
@@ -176,47 +252,55 @@ function renderContactLinks() {
   el.innerHTML = orderRowHTML(buildOrderLinks(null));
 }
 
-function escapeHTML(str) {
-  const div = document.createElement('div');
-  div.textContent = str ?? '';
-  return div.innerHTML;
-}
-
-/* =======================================================================
-   لوحة التحكم (dashboard.html)
-   ======================================================================= */
+// ============================================================
+// 8. لوحة التحكم (dashboard.html)
+// ============================================================
 function initDashboard() {
   const loginGate = document.getElementById('login-gate');
   const dashboardMain = document.getElementById('dashboard-main');
-  if (!loginGate || !dashboardMain) return; // لسنا في صفحة اللوحة
+  if (!loginGate || !dashboardMain) return;
 
-  /* ---- تسجيل الدخول (حماية بسيطة من جهة المتصفح فقط، وليست حماية حقيقية) ---- */
   const loginForm = document.getElementById('login-form');
   const loginError = document.getElementById('login-error');
+  const emailInput = document.getElementById('login-email');
+  const passwordInput = document.getElementById('login-password');
 
   function showDashboard() {
     loginGate.hidden = true;
     dashboardMain.hidden = false;
-    renderDashboardList();
+    loadDashboardProducts();
   }
 
-  if (sessionStorage.getItem(AUTH_KEY) === 'true') {
-    showDashboard();
+  function hideDashboard() {
+    loginGate.hidden = false;
+    dashboardMain.hidden = true;
   }
 
-  loginForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const val = document.getElementById('login-password').value;
-    if (val === ADMIN_PASSWORD) {
-      sessionStorage.setItem(AUTH_KEY, 'true');
-      loginError.hidden = true;
+  // التحقق من حالة تسجيل الدخول
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
       showDashboard();
     } else {
-      loginError.hidden = false;
+      hideDashboard();
     }
   });
 
-  /* ---- نموذج إضافة منتج ---- */
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      loginError.hidden = true;
+    } catch (error) {
+      loginError.textContent = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+      loginError.hidden = false;
+      console.error("خطأ في تسجيل الدخول:", error);
+    }
+  });
+
+  // --- نموذج إضافة منتج ---
   const form = document.getElementById('product-form');
   const nameInput = document.getElementById('p-name');
   const priceInput = document.getElementById('p-price');
@@ -231,8 +315,8 @@ function initDashboard() {
     const file = imageInput.files[0];
     if (!file) return;
 
-    if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
-      alert(`الصورة كبيرة جداً — يفضّل أقل من ${MAX_IMAGE_MB} ميغابايت لتفادي امتلاء التخزين المحلي.`);
+    if (file.size > 1.5 * 1024 * 1024) {
+      alert('الصورة كبيرة جداً — يفضّل أقل من 1.5 ميغابايت');
       imageInput.value = '';
       return;
     }
@@ -253,83 +337,102 @@ function initDashboard() {
     removeImageBtn.disabled = true;
   });
 
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const newProduct = {
-      id: uid(),
+    const productData = {
       name: nameInput.value.trim(),
       price: Number(priceInput.value) || 0,
       description: descInput.value.trim(),
-      image: pendingImage
+      image: null
     };
 
-    if (!newProduct.name) return;
+    if (!productData.name) {
+      alert('الرجاء إدخال اسم المنتج');
+      return;
+    }
 
-    const products = getProducts();
-    products.unshift(newProduct);
-    if (!saveProducts(products)) return;
+    // إضافة المنتج
+    const result = await addProduct(productData);
+    
+    if (!result.success) {
+      alert('حدث خطأ في إضافة المنتج: ' + result.error);
+      return;
+    }
 
+    const productId = result.id;
+
+    // رفع الصورة إن وجدت
+    if (pendingImage) {
+      const uploadResult = await uploadImage(productId, pendingImage);
+      if (uploadResult.success) {
+        await updateProduct(productId, { image: uploadResult.url });
+      }
+    }
+
+    // إعادة تعيين النموذج
     form.reset();
     pendingImage = null;
     imagePreview.innerHTML = `<span class="preview-placeholder">لا توجد صورة</span>`;
     removeImageBtn.disabled = true;
 
-    renderDashboardList();
+    alert('تم إضافة المنتج بنجاح! ✨');
   });
-
-  renderDashboardList();
 }
 
-function renderDashboardList() {
+// تحميل المنتجات في لوحة التحكم
+let dashboardProducts = [];
+
+function loadDashboardProducts() {
   const list = document.getElementById('dash-product-list');
-  if (!list) return;
-
   const emptyState = document.getElementById('dash-empty-state');
-  const products = getProducts();
 
-  list.innerHTML = '';
+  listenToProducts((products) => {
+    dashboardProducts = products;
+    
+    list.innerHTML = '';
 
-  if (!products.length) {
-    if (emptyState) emptyState.hidden = false;
-    return;
-  }
-  if (emptyState) emptyState.hidden = true;
+    if (!products.length) {
+      if (emptyState) emptyState.hidden = false;
+      return;
+    }
+    if (emptyState) emptyState.hidden = true;
 
-  products.forEach(p => {
-    const row = document.createElement('div');
-    row.className = 'dash-product-item';
-    row.dataset.id = p.id;
+    products.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'dash-product-item';
+      row.dataset.id = p.id;
 
-    const thumbHTML = p.image
-      ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
-      : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
+      const thumbHTML = p.image
+        ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
+        : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
-    row.innerHTML = `
-      <div class="dash-thumb">${thumbHTML}</div>
-      <div class="dash-item-fields">
-        <input type="text" data-field="name" value="${escapeAttr(p.name)}" aria-label="اسم المنتج">
-        <div class="field-inline">
-          <input type="number" data-field="price" value="${p.price}" min="0" aria-label="السعر">
-          <label class="btn btn-ghost btn-small" style="cursor:pointer;">
-            تغيير الصورة
-            <input type="file" accept="image/*" data-field="image-file" hidden>
-          </label>
-          <button type="button" class="btn btn-outline-danger btn-small" data-action="remove-image" ${p.image ? '' : 'disabled'}>إزالة الصورة</button>
+      row.innerHTML = `
+        <div class="dash-thumb">${thumbHTML}</div>
+        <div class="dash-item-fields">
+          <input type="text" data-field="name" value="${escapeAttr(p.name)}" aria-label="اسم المنتج">
+          <div class="field-inline">
+            <input type="number" data-field="price" value="${p.price}" min="0" aria-label="السعر">
+            <label class="btn btn-ghost btn-small" style="cursor:pointer;">
+              تغيير الصورة
+              <input type="file" accept="image/*" data-field="image-file" hidden>
+            </label>
+            <button type="button" class="btn btn-outline-danger btn-small" data-action="remove-image" ${p.image ? '' : 'disabled'}>إزالة الصورة</button>
+          </div>
+          <span class="save-flash" data-role="flash">تم الحفظ ✓</span>
         </div>
-        <span class="save-flash" data-role="flash">تم الحفظ ✓</span>
-      </div>
-      <div class="dash-item-actions">
-        <button type="button" class="btn btn-outline-danger btn-small" data-action="delete">حذف المنتج</button>
-      </div>
-    `;
-    list.appendChild(row);
-  });
+        <div class="dash-item-actions">
+          <button type="button" class="btn btn-outline-danger btn-small" data-action="delete">حذف المنتج</button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
 
-  attachRowListeners(list);
+    attachDashboardListeners(list);
+  });
 }
 
-function attachRowListeners(list) {
+function attachDashboardListeners(list) {
   list.querySelectorAll('.dash-product-item').forEach(row => {
     const id = row.dataset.id;
     const flash = row.querySelector('[data-role="flash"]');
@@ -341,67 +444,79 @@ function attachRowListeners(list) {
       flash._t = setTimeout(() => flash.classList.remove('show'), 1200);
     }
 
-    function updateProduct(mutator) {
-      const products = getProducts();
-      const idx = products.findIndex(p => p.id === id);
-      if (idx === -1) return;
-      mutator(products[idx]);
-      if (saveProducts(products)) flashSaved();
-    }
-
+    // تحديث الاسم
     const nameInput = row.querySelector('[data-field="name"]');
-    nameInput.addEventListener('change', () => {
+    nameInput.addEventListener('change', async () => {
       const val = nameInput.value.trim();
-      if (!val) { nameInput.value = getProducts().find(p => p.id === id)?.name || ''; return; }
-      updateProduct(p => { p.name = val; });
+      if (!val) return;
+      await updateProduct(id, { name: val });
+      flashSaved();
     });
 
+    // تحديث السعر
     const priceInput = row.querySelector('[data-field="price"]');
-    priceInput.addEventListener('change', () => {
-      updateProduct(p => { p.price = Number(priceInput.value) || 0; });
+    priceInput.addEventListener('change', async () => {
+      await updateProduct(id, { price: Number(priceInput.value) || 0 });
+      flashSaved();
     });
 
+    // تغيير الصورة
     const imageFileInput = row.querySelector('[data-field="image-file"]');
-    imageFileInput.addEventListener('change', () => {
+    imageFileInput.addEventListener('change', async () => {
       const file = imageFileInput.files[0];
       if (!file) return;
-      if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
-        alert(`الصورة كبيرة جداً — يفضّل أقل من ${MAX_IMAGE_MB} ميغابايت.`);
+      
+      if (file.size > 1.5 * 1024 * 1024) {
+        alert('الصورة كبيرة جداً');
         imageFileInput.value = '';
         return;
       }
+
       const reader = new FileReader();
-      reader.onload = () => {
-        updateProduct(p => { p.image = reader.result; });
-        renderDashboardList();
+      reader.onload = async () => {
+        const result = await uploadImage(id, reader.result);
+        if (result.success) {
+          await updateProduct(id, { image: result.url });
+          flashSaved();
+          loadDashboardProducts();
+        }
       };
       reader.readAsDataURL(file);
     });
 
-    row.querySelector('[data-action="remove-image"]').addEventListener('click', () => {
-      updateProduct(p => { p.image = null; });
-      renderDashboardList();
+    // إزالة الصورة
+    const removeBtn = row.querySelector('[data-action="remove-image"]');
+    removeBtn.addEventListener('click', async () => {
+      await deleteImage(id);
+      await updateProduct(id, { image: null });
+      flashSaved();
+      loadDashboardProducts();
     });
 
-    row.querySelector('[data-action="delete"]').addEventListener('click', () => {
+    // حذف المنتج
+    const deleteBtn = row.querySelector('[data-action="delete"]');
+    deleteBtn.addEventListener('click', async () => {
       if (!confirm('حذف هذا المنتج نهائياً؟')) return;
-      const products = getProducts().filter(p => p.id !== id);
-      saveProducts(products);
-      renderDashboardList();
+      await deleteProduct(id);
+      await deleteImage(id);
+      loadDashboardProducts();
     });
   });
 }
 
-function escapeAttr(str) {
-  return escapeHTML(str).replace(/"/g, '&quot;');
-}
-
-/* =======================================================================
-   نقطة الانطلاق
-   ======================================================================= */
+// ============================================================
+// 9. تشغيل كل شيء
+// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   initShared();
-  renderStorefront();
   renderContactLinks();
   initDashboard();
+
+  // تشغيل المتجر مع الاستماع المباشر
+  const isDashboard = document.querySelector('.dashboard-body');
+  if (!isDashboard) {
+    listenToProducts((products) => {
+      renderStorefront(products);
+    });
+  }
 });
