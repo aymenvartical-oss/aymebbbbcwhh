@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (مع Firebase + FreeImage.Host)
+   SAC DIAMANT — script.js (مع Firebase + Cloudinary)
    ===================================================================== */
 
 // ============================================================
@@ -43,9 +43,11 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // ============================================================
-// 3. إعدادات FreeImage.Host
+// 3. إعدادات Cloudinary
 // ============================================================
-const FREEIMAGE_API_KEY = '6d207e02198a847aa98d0a2a901485a5';
+const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
+const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
+const CLOUDINARY_API_KEY = 'f74f2K2eVN6HRaHOEezQqu4OnoU';
 
 // ============================================================
 // 4. إعدادات التواصل
@@ -147,7 +149,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور - باستخدام FreeImage.Host
+// 7. دوال رفع الصور - باستخدام Cloudinary
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -178,30 +180,32 @@ function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   });
 }
 
-async function uploadImageToFreeImage(imageDataUrl) {
+async function uploadImageToCloudinary(imageDataUrl) {
   try {
-    const compressedImage = await compressImage(imageDataUrl, 500, 500, 0.6);
-    const base64Data = compressedImage.split(',')[1];
+    const compressedImage = await compressImage(imageDataUrl, 600, 600, 0.7);
     
     const formData = new FormData();
-    formData.append('key', FREEIMAGE_API_KEY);
-    formData.append('image', base64Data);
-    formData.append('format', 'json');
+    formData.append('file', compressedImage);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('api_key', CLOUDINARY_API_KEY);
     
-    const response = await fetch('https://freeimage.host/api/1/upload', {
-      method: 'POST',
-      body: formData
-    });
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData
+      }
+    );
     
     const data = await response.json();
     
-    if (data.status_code === 200) {
+    if (data.secure_url) {
       return { 
         success: true, 
-        url: data.image.url
+        url: data.secure_url
       };
     } else {
-      console.error('خطأ FreeImage.Host:', data);
+      console.error('خطأ Cloudinary:', data);
       return { 
         success: false, 
         error: data.error?.message || 'فشل رفع الصورة'
@@ -214,11 +218,11 @@ async function uploadImageToFreeImage(imageDataUrl) {
 }
 
 async function uploadImage(productId, imageDataUrl) {
-  return await uploadImageToFreeImage(imageDataUrl);
+  return await uploadImageToCloudinary(imageDataUrl);
 }
 
 async function deleteImage(productId) {
-  console.log('تم تجاهل حذف الصورة (FreeImage.Host لا يدعم الحذف عبر API)');
+  console.log('تم تجاهل حذف الصورة (Cloudinary يتطلب API Secret للحذف)');
   return { success: true };
 }
 
