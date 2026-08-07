@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (مع Firebase + ImgBB)
+   SAC DIAMANT — script.js (مع Firebase + FreeImage.Host)
    ===================================================================== */
 
 // ============================================================
@@ -43,9 +43,9 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // ============================================================
-// 3. إعدادات ImgBB
+// 3. إعدادات FreeImage.Host
 // ============================================================
-const IMGBB_API_KEY = '1090af6c6f8ca6332b113ae6e6147fc5';
+const FREEIMAGE_API_KEY = '6d207e02198a847aa98d0a2a901485a5';
 
 // ============================================================
 // 4. إعدادات التواصل
@@ -147,7 +147,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور - باستخدام ImgBB
+// 7. دوال رفع الصور - باستخدام FreeImage.Host
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -178,27 +178,30 @@ function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   });
 }
 
-async function uploadImageToImgBB(imageDataUrl) {
+async function uploadImageToFreeImage(imageDataUrl) {
   try {
-    const compressedImage = await compressImage(imageDataUrl, 800, 800, 0.8);
+    const compressedImage = await compressImage(imageDataUrl, 500, 500, 0.6);
+    const base64Data = compressedImage.split(',')[1];
     
     const formData = new FormData();
-    formData.append('key', IMGBB_API_KEY);
-    formData.append('image', compressedImage);
+    formData.append('key', FREEIMAGE_API_KEY);
+    formData.append('image', base64Data);
+    formData.append('format', 'json');
     
-    const response = await fetch('https://api.imgbb.com/1/upload', {
+    const response = await fetch('https://freeimage.host/api/1/upload', {
       method: 'POST',
       body: formData
     });
     
     const data = await response.json();
     
-    if (data.success) {
+    if (data.status_code === 200) {
       return { 
         success: true, 
-        url: data.data.url
+        url: data.image.url
       };
     } else {
+      console.error('خطأ FreeImage.Host:', data);
       return { 
         success: false, 
         error: data.error?.message || 'فشل رفع الصورة'
@@ -211,11 +214,11 @@ async function uploadImageToImgBB(imageDataUrl) {
 }
 
 async function uploadImage(productId, imageDataUrl) {
-  return await uploadImageToImgBB(imageDataUrl);
+  return await uploadImageToFreeImage(imageDataUrl);
 }
 
 async function deleteImage(productId) {
-  console.log('تم تجاهل حذف الصورة (ImgBB لا يدعم الحذف عبر API)');
+  console.log('تم تجاهل حذف الصورة (FreeImage.Host لا يدعم الحذف عبر API)');
   return { success: true };
 }
 
