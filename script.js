@@ -54,7 +54,7 @@ const CLOUDINARY_API_KEY = 'f74f2K2eVN6HRaHOEezQqu4OnoU';
 // ============================================================
 const WHATSAPP_NUMBER    = '213000000000';
 const FACEBOOK_USERNAME  = 'sac.diamant';
-const INSTAGRAM_USERNAME = 'sac.diamant';
+const INSTAGRAM_USERNAME = 'sac_diamant';
 
 const ICONS = {
   whatsapp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.3-3.9A8 8 0 1 1 8.9 19.7L4 20Z"/><path d="M8.5 9.5c0 3 2.5 5.5 5.5 5.5.6 0 1-.4 1-1v-1l-2-1-1 1a5 5 0 0 1-2.5-2.5l1-1-1-2H9c-.6 0-.5.4-.5 1Z"/></svg>',
