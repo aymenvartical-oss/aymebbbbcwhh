@@ -53,7 +53,7 @@ const CLOUDINARY_API_KEY = 'f74f2K2eVN6HRaHOEezQqu4OnoU';
 // 4. إعدادات التواصل
 // ============================================================
 const WHATSAPP_NUMBER    = '213000000000';
-const FACEBOOK_USERNAME  = 'sac.diamant';
+const FACEBOOK_USERNAME  = 'https://www.facebook.com/sac.diamant';
 const INSTAGRAM_USERNAME = 'sac_diamant';
 
 const ICONS = {
