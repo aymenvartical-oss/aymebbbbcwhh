@@ -11,8 +11,6 @@
 </head>
 <body>
 
-<div class="facet-cursor" id="facetCursor" aria-hidden="true"></div>
-
 <header class="site-header">
   <a href="#top" class="logo">
     <span class="logo-facet" aria-hidden="true"></span>
@@ -23,9 +21,21 @@
     <a href="#about">من نحن</a>
     <a href="#contact">تواصل</a>
   </nav>
-  <button class="menu-toggle" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">
-    <span></span><span></span><span></span>
-  </button>
+  <div class="header-actions">
+    <button class="icon-action-btn" id="searchToggle" aria-label="بحث">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    </button>
+    <div class="search-box" id="searchBox">
+      <input type="text" id="searchInput" placeholder="ابحثي عن قطعة...">
+    </div>
+    <button class="icon-action-btn" id="cartToggle" aria-label="السلة">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+      <span class="cart-count" id="cartCount" hidden>0</span>
+    </button>
+    <button class="menu-toggle" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
 </header>
 
 <main>
@@ -38,6 +48,19 @@
       <span class="facet f5"></span>
     </div>
     <div class="hero-content">
+      <svg class="hero-gem" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+        <polygon points="32,4 54,22 32,60 10,22" fill="url(#gemGrad)" stroke="#e8c96a" stroke-width="1.2"/>
+        <polygon points="32,4 54,22 45,22 32,4" fill="#f4efe1" opacity=".35"/>
+        <polyline points="10,22 54,22" stroke="#e8c96a" stroke-width="1"/>
+        <polyline points="32,4 22,22 32,60" stroke="#e8c96a" stroke-width=".7" opacity=".7"/>
+        <polyline points="32,4 42,22 32,60" stroke="#e8c96a" stroke-width=".7" opacity=".7"/>
+        <defs>
+          <linearGradient id="gemGrad" x1="10" y1="4" x2="54" y2="60" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#7db0e0"/>
+            <stop offset="1" stop-color="#3f6fa5"/>
+          </linearGradient>
+        </defs>
+      </svg>
       <p class="eyebrow"><span class="diamond-bullet"></span> مجموعة مختارة بعناية</p>
       <h1>بريقٌ<br>يليقُ باختيارك</h1>
       <p class="hero-sub">قطع مختارة بعناية من خزانتي الخاصة — كل قطعة محدودة، وكل تفصيل مدروس.</p>
@@ -58,12 +81,19 @@
       <p class="section-sub">قطع بكمية محدودة — ما ينفد لا يعود</p>
     </div>
 
+    <div class="catalog-bar">
+      <div class="category-chips" id="categoryChips"></div>
+      <div class="catalog-search">
+        <input type="text" id="catalogSearch" placeholder="ابحثي عن قطعة...">
+      </div>
+    </div>
+
     <div id="product-grid" class="product-grid"></div>
 
     <div id="empty-state" class="empty-state" hidden>
       <span class="diamond-icon-lg" aria-hidden="true"></span>
-      <p>لا توجد منتجات معروضة حالياً</p>
-      <span class="empty-sub">تابعينا قريباً لمجموعة جديدة</span>
+      <p>لا توجد منتجات مطابقة</p>
+      <span class="empty-sub">جرّبي بحثاً أو تصنيفاً مختلفاً</span>
     </div>
   </section>
 
@@ -76,12 +106,10 @@
   </section>
 
   <section class="contact" id="contact">
-    <div class="contact-inner">
-      <p class="eyebrow"><span class="diamond-bullet"></span> جاهزة لطلبك</p>
-      <h2>تواصلي للطلب</h2>
-      <p class="section-sub">أسرع طريقة هي واتساب — اضغطي على "اطلب" تحت أي قطعة، أو راسليني مباشرة من هنا</p>
-      <div class="contact-links" id="contact-links"></div>
-    </div>
+    <p class="eyebrow"><span class="diamond-bullet"></span> جاهزة لطلبك</p>
+    <h2>تواصلي للطلب</h2>
+    <p class="section-sub">أسرع طريقة هي واتساب — أضيفي القطع للسلة واطلبي مباشرة، أو راسليني من هنا</p>
+    <div class="contact-links" id="contact-links"></div>
   </section>
 </main>
 
@@ -90,6 +118,41 @@
   <p>© <span id="year"></span> Sac Diamant — جميع الحقوق محفوظة</p>
   <a href="dashboard.html" class="dash-link">لوحة التحكم</a>
 </footer>
+
+<!-- Quick view modal -->
+<div class="modal-overlay" id="quickView">
+  <div class="modal-card">
+    <div class="modal-image"><img id="qvImage" src="" alt=""></div>
+    <div class="modal-body">
+      <button class="modal-close" id="qvClose" aria-label="إغلاق">✕</button>
+      <span class="product-cat" id="qvCat"></span>
+      <h3 id="qvName"></h3>
+      <p class="price" id="qvPrice"></p>
+      <p class="product-desc" id="qvDesc"></p>
+      <button class="btn btn-gold" id="qvAddToCart">أضيفي للسلة</button>
+      <div class="order-row" id="qvOrderRow"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Cart -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer">
+  <div class="cart-head">
+    <h3>سلة الطلبات</h3>
+    <button class="cart-close" id="cartClose" aria-label="إغلاق">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-footer">
+    <div class="cart-subtotal">
+      <span>المجموع</span>
+      <span class="price" id="cartSubtotal">0 د.ج</span>
+    </div>
+    <button class="btn btn-gold btn-block" id="checkoutBtn">إتمام الطلب عبر واتساب</button>
+  </div>
+</aside>
+
+<div class="toast-stack" id="toastStack"></div>
 
 <script type="module" src="script.js"></script>
 </body>

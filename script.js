@@ -1,18 +1,17 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (مع Firebase + Cloudinary)
+   SAC DIAMANT — script.js (Firebase + Cloudinary + سلة تسوق)
    ===================================================================== */
 
 // ============================================================
 // 1. استيراد Firebase
 // ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { 
-  getFirestore, 
-  collection, 
-  getDocs, 
-  addDoc, 
-  deleteDoc, 
-  doc, 
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
   updateDoc,
   onSnapshot,
   query,
@@ -21,12 +20,11 @@ import {
 import {
   getAuth,
   signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ============================================================
-// 2. إعداد Firebase
+// 2. إعداد Firebase — بدون أي تغيير
 // ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDmDukDO-iVEOwaE2XF9PxwbFg9elplIqM",
@@ -44,10 +42,12 @@ const auth = getAuth(app);
 
 // ============================================================
 // 3. إعدادات Cloudinary
+//    مهم: الرفع هنا "Unsigned" عبر upload_preset فقط —
+//    لا تضيفي أبداً API Key أو API Secret هنا، فهذا الملف
+//    مرئي للجميع في المتصفح ولا داعي لهما إطلاقاً بهذه الطريقة.
 // ============================================================
 const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
 const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
-const CLOUDINARY_API_KEY = 'aqmgyMSmaIO2cQd1b3i9GjVnyEM';
 
 // ============================================================
 // 4. إعدادات التواصل
@@ -75,12 +75,10 @@ function buildOrderLinks(product) {
 
 function orderRowHTML(links) {
   return `
-    <div class="order-row">
-      <span class="order-label">اطلبي عبر:</span>
-      <a class="icon-btn" href="${links.whatsapp}" target="_blank" rel="noopener" title="اطلب عبر واتساب">${ICONS.whatsapp}</a>
-      <a class="icon-btn" href="${links.facebook}" target="_blank" rel="noopener" title="تواصل عبر فيسبوك">${ICONS.facebook}</a>
-      <a class="icon-btn" href="${links.instagram}" target="_blank" rel="noopener" title="تواصل عبر إنستغرام">${ICONS.instagram}</a>
-    </div>
+    <span class="order-label">اطلبي عبر:</span>
+    <a class="icon-btn" href="${links.whatsapp}" target="_blank" rel="noopener" title="اطلب عبر واتساب">${ICONS.whatsapp}</a>
+    <a class="icon-btn" href="${links.facebook}" target="_blank" rel="noopener" title="تواصل عبر فيسبوك">${ICONS.facebook}</a>
+    <a class="icon-btn" href="${links.instagram}" target="_blank" rel="noopener" title="تواصل عبر إنستغرام">${ICONS.instagram}</a>
   `;
 }
 
@@ -102,7 +100,20 @@ function escapeAttr(str) {
 }
 
 // ============================================================
-// 6. دوال Firebase
+// 5.1 إشعارات (Toast) — تحل محل alert() في أغلب الحالات
+// ============================================================
+function toast(message, type = 'info') {
+  const stack = document.getElementById('toastStack');
+  if (!stack) return;
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = message;
+  stack.appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+
+// ============================================================
+// 6. دوال Firebase — بدون أي تغيير في المنطق
 // ============================================================
 function listenToProducts(callback) {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -149,7 +160,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور - باستخدام Cloudinary
+// 7. دوال رفع الصور — Cloudinary (Unsigned فقط)
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -157,7 +168,7 @@ function compressImage(dataUrl, maxWidth, maxHeight, quality) {
     img.onload = () => {
       let width = img.width;
       let height = img.height;
-      
+
       if (width > maxWidth) {
         height = (height * maxWidth) / width;
         width = maxWidth;
@@ -166,13 +177,13 @@ function compressImage(dataUrl, maxWidth, maxHeight, quality) {
         width = (width * maxHeight) / height;
         height = maxHeight;
       }
-      
+
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
-      
+
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
     img.onerror = reject;
@@ -182,47 +193,44 @@ function compressImage(dataUrl, maxWidth, maxHeight, quality) {
 
 async function uploadImageToCloudinary(imageDataUrl) {
   try {
-    const compressedImage = await compressImage(imageDataUrl, 600, 600, 0.7);
-    
+    const compressedImage = await compressImage(imageDataUrl, 700, 700, 0.75);
+
     const formData = new FormData();
     formData.append('file', compressedImage);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    formData.append('api_key', CLOUDINARY_API_KEY);
-    
+
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: formData
-      }
+      { method: 'POST', body: formData }
     );
-    
+
     const data = await response.json();
-    
+
     if (data.secure_url) {
-      return { 
-        success: true, 
-        url: data.secure_url
-      };
-    } else {
-      console.error('خطأ Cloudinary:', data);
-      return { 
-        success: false, 
-        error: data.error?.message || 'فشل رفع الصورة'
-      };
+      return { success: true, url: data.secure_url };
     }
+
+    console.error('خطأ Cloudinary:', data);
+    const rawMessage = data.error?.message || '';
+    let friendlyError = rawMessage || 'فشل رفع الصورة لسبب غير معروف';
+    if (/preset/i.test(rawMessage)) {
+      friendlyError = 'إعداد رفع الصور (upload preset) غير صحيح أو غير مضبوط على Unsigned في لوحة Cloudinary';
+    } else if (/cloud[_ ]?name/i.test(rawMessage) || response.status === 404) {
+      friendlyError = 'اسم الحزمة (cloud name) غير صحيح';
+    }
+    return { success: false, error: friendlyError };
   } catch (error) {
     console.error("خطأ في رفع الصورة:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: 'تعذّر الاتصال بخادم رفع الصور — تأكدي من الإنترنت وحاولي مجدداً' };
   }
 }
 
-async function uploadImage(productId, imageDataUrl) {
+async function uploadImage(imageDataUrl) {
   return await uploadImageToCloudinary(imageDataUrl);
 }
 
-async function deleteImage(productId) {
-  console.log('تم تجاهل حذف الصورة (Cloudinary يتطلب API Secret للحذف)');
+async function deleteImage() {
+  // Cloudinary يتطلب توقيعاً من الخادم لحذف الصور فعلياً؛ يُتجاهل هنا عمداً.
   return { success: true };
 }
 
@@ -247,20 +255,197 @@ function initShared() {
       })
     );
   }
+
+  const searchToggle = document.getElementById('searchToggle');
+  const searchBox = document.getElementById('searchBox');
+  const headerSearchInput = document.getElementById('searchInput');
+  if (searchToggle && searchBox) {
+    searchToggle.addEventListener('click', () => {
+      const isOpen = searchBox.classList.toggle('open');
+      if (isOpen && headerSearchInput) headerSearchInput.focus();
+    });
+  }
 }
 
 // ============================================================
-// 9. المتجر (index.html)
+// 9. سلة التسوق
 // ============================================================
-function renderStorefront(products) {
+const CART_KEY = 'sacDiamantCart';
+let cart = [];
+
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    cart = raw ? JSON.parse(raw) : [];
+  } catch {
+    cart = [];
+  }
+}
+
+function saveCart() {
+  try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { /* تجاهل */ }
+}
+
+function cartSubtotal() {
+  return cart.reduce((sum, item) => sum + (Number(item.price) || 0) * item.qty, 0);
+}
+
+function addToCart(product, qty = 1) {
+  const existing = cart.find(i => i.id === product.id);
+  if (existing) {
+    existing.qty += qty;
+  } else {
+    cart.push({ id: product.id, name: product.name, price: product.price, image: product.image || null, qty });
+  }
+  saveCart();
+  renderCartUI();
+  toast(`تمت إضافة "${product.name}" للسلة ✓`, 'success');
+}
+
+function changeCartQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+  saveCart();
+  renderCartUI();
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(i => i.id !== id);
+  saveCart();
+  renderCartUI();
+}
+
+function renderCartUI() {
+  const countEl = document.getElementById('cartCount');
+  const itemsEl = document.getElementById('cartItems');
+  const subtotalEl = document.getElementById('cartSubtotal');
+  if (!itemsEl) return;
+
+  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
+  if (countEl) {
+    countEl.textContent = String(totalQty);
+    countEl.hidden = totalQty === 0;
+  }
+
+  if (!cart.length) {
+    itemsEl.innerHTML = `<div class="cart-empty">سلتك فارغة حالياً<br>أضيفي قطعة من المجموعة ✨</div>`;
+  } else {
+    itemsEl.innerHTML = cart.map(item => `
+      <div class="cart-item" data-id="${item.id}">
+        <div class="cart-item-thumb">${item.image ? `<img src="${item.image}" alt="${escapeAttr(item.name)}">` : `<span class="diamond-icon-lg" style="width:26px;height:26px;"></span>`}</div>
+        <div class="cart-item-info">
+          <h4>${escapeHTML(item.name)}</h4>
+          <p class="price">${formatPrice(item.price)}</p>
+          <div class="qty-stepper">
+            <button type="button" data-action="dec" aria-label="إنقاص">−</button>
+            <span>${item.qty}</span>
+            <button type="button" data-action="inc" aria-label="زيادة">+</button>
+          </div>
+        </div>
+        <button type="button" class="cart-item-remove" data-action="remove">إزالة</button>
+      </div>
+    `).join('');
+  }
+
+  if (subtotalEl) subtotalEl.textContent = formatPrice(cartSubtotal());
+}
+
+function openCart() {
+  document.getElementById('cartDrawer')?.classList.add('open');
+  document.getElementById('cartOverlay')?.classList.add('open');
+}
+function closeCart() {
+  document.getElementById('cartDrawer')?.classList.remove('open');
+  document.getElementById('cartOverlay')?.classList.remove('open');
+}
+
+function checkoutViaWhatsApp() {
+  if (!cart.length) {
+    toast('سلتك فارغة — أضيفي قطعة أولاً', 'error');
+    return;
+  }
+  const lines = cart.map(i => `• ${i.name} × ${i.qty} — ${formatPrice((Number(i.price) || 0) * i.qty)}`).join('\n');
+  const message = encodeURIComponent(`مرحباً، أرغب بطلب:\n${lines}\n\nالمجموع: ${formatPrice(cartSubtotal())}`);
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank', 'noopener');
+}
+
+function initCart() {
+  const cartItemsEl = document.getElementById('cartItems');
+  if (!cartItemsEl) return; // صفحة لا تحتوي سلة (لوحة التحكم)
+
+  loadCart();
+  renderCartUI();
+
+  document.getElementById('cartToggle')?.addEventListener('click', openCart);
+  document.getElementById('cartClose')?.addEventListener('click', closeCart);
+  document.getElementById('cartOverlay')?.addEventListener('click', closeCart);
+  document.getElementById('checkoutBtn')?.addEventListener('click', checkoutViaWhatsApp);
+
+  cartItemsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.closest('.cart-item')?.dataset.id;
+    if (!id) return;
+    if (btn.dataset.action === 'inc') changeCartQty(id, 1);
+    if (btn.dataset.action === 'dec') changeCartQty(id, -1);
+    if (btn.dataset.action === 'remove') removeFromCart(id);
+  });
+}
+
+// ============================================================
+// 10. المتجر (index.html)
+// ============================================================
+let storefrontProducts = [];
+let currentCategory = 'الكل';
+let currentSearchTerm = '';
+
+function buildCategoryList(products) {
+  const set = new Set();
+  products.forEach(p => { if (p.category && p.category.trim()) set.add(p.category.trim()); });
+  return ['الكل', ...Array.from(set)];
+}
+
+function renderCategoryChips(products) {
+  const wrap = document.getElementById('categoryChips');
+  if (!wrap) return;
+  const categories = buildCategoryList(products);
+  if (!categories.includes(currentCategory)) currentCategory = 'الكل';
+
+  wrap.innerHTML = categories.map(cat =>
+    `<button type="button" class="chip${cat === currentCategory ? ' active' : ''}" data-cat="${escapeAttr(cat)}">${escapeHTML(cat)}</button>`
+  ).join('');
+
+  wrap.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      currentCategory = chip.dataset.cat;
+      renderCategoryChips(storefrontProducts);
+      applyStorefrontFilters();
+    });
+  });
+}
+
+function applyStorefrontFilters() {
+  const term = currentSearchTerm.trim().toLowerCase();
+  const filtered = storefrontProducts.filter(p => {
+    const matchesCategory = currentCategory === 'الكل' || (p.category || '').trim() === currentCategory;
+    const matchesSearch = !term ||
+      p.name.toLowerCase().includes(term) ||
+      (p.description || '').toLowerCase().includes(term);
+    return matchesCategory && matchesSearch;
+  });
+  renderProductGrid(filtered);
+}
+
+function renderProductGrid(products) {
   const grid = document.getElementById('product-grid');
   if (!grid) return;
-
   const emptyState = document.getElementById('empty-state');
 
   grid.innerHTML = '';
 
-  if (!products || !products.length) {
+  if (!products.length) {
     if (emptyState) emptyState.hidden = false;
     return;
   }
@@ -271,26 +456,40 @@ function renderStorefront(products) {
     card.className = 'product-card';
 
     const imageHTML = p.image
-      ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
+      ? `<img src="${p.image}" alt="${escapeAttr(p.name)}" loading="lazy">`
       : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
-    const descHTML = p.description
-      ? `<p class="product-desc">${escapeHTML(p.description)}</p>`
-      : '';
-
-    const links = buildOrderLinks(p);
+    const catHTML = p.category ? `<span class="product-cat">${escapeHTML(p.category)}</span>` : '';
 
     card.innerHTML = `
-      <div class="product-image">${imageHTML}</div>
+      <div class="product-image" data-action="view">${imageHTML}</div>
       <div class="product-info">
+        ${catHTML}
         <h3>${escapeHTML(p.name)}</h3>
         <p class="price">${formatPrice(p.price)}</p>
-        ${descHTML}
-        ${orderRowHTML(links)}
+        <div class="product-card-actions">
+          <button type="button" class="btn btn-gold add-to-cart-btn" data-action="add">أضيفي للسلة</button>
+          <button type="button" class="details-link" data-action="view">التفاصيل</button>
+        </div>
       </div>
     `;
+
+    card.querySelector('[data-action="add"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      addToCart(p, 1);
+    });
+    card.querySelectorAll('[data-action="view"]').forEach(el =>
+      el.addEventListener('click', () => openQuickView(p))
+    );
+
     grid.appendChild(card);
   });
+}
+
+function renderStorefront(products) {
+  storefrontProducts = products || [];
+  renderCategoryChips(storefrontProducts);
+  applyStorefrontFilters();
 }
 
 function renderContactLinks() {
@@ -299,9 +498,72 @@ function renderContactLinks() {
   el.innerHTML = orderRowHTML(buildOrderLinks(null));
 }
 
+// ---- Quick view modal ----
+function openQuickView(product) {
+  const overlay = document.getElementById('quickView');
+  if (!overlay) return;
+
+  document.getElementById('qvImage').src = product.image || '';
+  document.getElementById('qvImage').alt = product.name;
+  document.getElementById('qvCat').textContent = product.category || '';
+  document.getElementById('qvName').textContent = product.name;
+  document.getElementById('qvPrice').textContent = formatPrice(product.price);
+  document.getElementById('qvDesc').textContent = product.description || '';
+  document.getElementById('qvOrderRow').innerHTML = orderRowHTML(buildOrderLinks(product));
+
+  const addBtn = document.getElementById('qvAddToCart');
+  addBtn.onclick = () => addToCart(product, 1);
+
+  overlay.classList.add('open');
+}
+
+function closeQuickView() {
+  document.getElementById('quickView')?.classList.remove('open');
+}
+
+function initQuickView() {
+  const overlay = document.getElementById('quickView');
+  if (!overlay) return;
+  document.getElementById('qvClose')?.addEventListener('click', closeQuickView);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeQuickView();
+  });
+}
+
+function initStorefrontSearch() {
+  const headerInput = document.getElementById('searchInput');
+  const catalogInput = document.getElementById('catalogSearch');
+  if (!headerInput && !catalogInput) return;
+
+  function onSearchInput(value, source) {
+    currentSearchTerm = value;
+    if (source !== headerInput && headerInput) headerInput.value = value;
+    if (source !== catalogInput && catalogInput) catalogInput.value = value;
+    applyStorefrontFilters();
+  }
+
+  headerInput?.addEventListener('input', () => onSearchInput(headerInput.value, headerInput));
+  catalogInput?.addEventListener('input', () => onSearchInput(catalogInput.value, catalogInput));
+}
+
 // ============================================================
-// 10. لوحة التحكم (dashboard.html)
+// 11. لوحة التحكم (dashboard.html)
 // ============================================================
+function setUploadStatus(text, type) {
+  const el = document.getElementById('upload-status');
+  if (!el) return;
+  el.textContent = text;
+  el.className = `upload-status${type ? ' ' + type : ''}`;
+}
+
+function populateCategorySuggestions(products) {
+  const datalist = document.getElementById('category-suggestions');
+  if (!datalist) return;
+  const set = new Set();
+  products.forEach(p => { if (p.category && p.category.trim()) set.add(p.category.trim()); });
+  datalist.innerHTML = Array.from(set).map(c => `<option value="${escapeAttr(c)}"></option>`).join('');
+}
+
 function initDashboard() {
   const loginGate = document.getElementById('login-gate');
   const dashboardMain = document.getElementById('dashboard-main');
@@ -324,18 +586,14 @@ function initDashboard() {
   }
 
   onAuthStateChanged(auth, (user) => {
-    if (user) {
-      showDashboard();
-    } else {
-      hideDashboard();
-    }
+    if (user) showDashboard();
+    else hideDashboard();
   });
 
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = emailInput.value;
     const password = passwordInput.value;
-
     try {
       await signInWithEmailAndPassword(auth, email, password);
       loginError.hidden = true;
@@ -349,6 +607,7 @@ function initDashboard() {
   const form = document.getElementById('product-form');
   const nameInput = document.getElementById('p-name');
   const priceInput = document.getElementById('p-price');
+  const categoryInput = document.getElementById('p-category');
   const descInput = document.getElementById('p-desc');
   const imageInput = document.getElementById('p-image');
   const imagePreview = document.getElementById('image-preview');
@@ -361,7 +620,7 @@ function initDashboard() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('الصورة كبيرة جداً — يفضّل أقل من 5 ميغابايت');
+      toast('الصورة كبيرة جداً — يفضّل أقل من 5 ميغابايت', 'error');
       imageInput.value = '';
       return;
     }
@@ -369,10 +628,11 @@ function initDashboard() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const compressed = await compressImage(e.target.result, 600, 600, 0.7);
+        const compressed = await compressImage(e.target.result, 700, 700, 0.75);
         pendingImage = compressed;
         imagePreview.innerHTML = `<img src="${compressed}" alt="معاينة الصورة">`;
         removeImageBtn.disabled = false;
+        setUploadStatus('', '');
       } catch (error) {
         console.error('خطأ في ضغط الصورة:', error);
         pendingImage = e.target.result;
@@ -388,6 +648,7 @@ function initDashboard() {
     imageInput.value = '';
     imagePreview.innerHTML = `<span class="preview-placeholder">لا توجد صورة</span>`;
     removeImageBtn.disabled = true;
+    setUploadStatus('', '');
   });
 
   form.addEventListener('submit', async (e) => {
@@ -396,12 +657,13 @@ function initDashboard() {
     const productData = {
       name: nameInput.value.trim(),
       price: Number(priceInput.value) || 0,
+      category: categoryInput.value.trim(),
       description: descInput.value.trim(),
       image: null
     };
 
     if (!productData.name) {
-      alert('الرجاء إدخال اسم المنتج');
+      toast('الرجاء إدخال اسم المنتج', 'error');
       return;
     }
 
@@ -412,9 +674,9 @@ function initDashboard() {
 
     try {
       const result = await addProduct(productData);
-      
+
       if (!result.success) {
-        alert('حدث خطأ في إضافة المنتج: ' + result.error);
+        toast('حدث خطأ في إضافة المنتج: ' + result.error, 'error');
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
         return;
@@ -423,12 +685,15 @@ function initDashboard() {
       const productId = result.id;
 
       if (pendingImage) {
-        const uploadResult = await uploadImage(productId, pendingImage);
+        setUploadStatus('جاري رفع الصورة...', 'pending');
+        const uploadResult = await uploadImage(pendingImage);
         if (uploadResult.success) {
           await updateProduct(productId, { image: uploadResult.url });
+          setUploadStatus('تم رفع الصورة ✓', 'success');
         } else {
           console.warn('تم إضافة المنتج لكن فشل رفع الصورة:', uploadResult.error);
-          alert('تم إضافة المنتج ولكن فشل رفع الصورة. يمكنك إعادة محاولة رفع الصورة لاحقاً.');
+          setUploadStatus('فشل رفع الصورة: ' + uploadResult.error, 'error');
+          toast('تم إضافة المنتج لكن فشل رفع الصورة — يمكنك تغييرها من القائمة أدناه', 'error');
         }
       }
 
@@ -437,10 +702,10 @@ function initDashboard() {
       imagePreview.innerHTML = `<span class="preview-placeholder">لا توجد صورة</span>`;
       removeImageBtn.disabled = true;
 
-      alert('تم إضافة المنتج بنجاح! ✨');
+      toast('تم إضافة المنتج بنجاح ✨', 'success');
     } catch (error) {
       console.error('خطأ:', error);
-      alert('حدث خطأ غير متوقع: ' + error.message);
+      toast('حدث خطأ غير متوقع: ' + error.message, 'error');
     } finally {
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;
@@ -448,18 +713,12 @@ function initDashboard() {
   });
 }
 
-// ============================================================
-// 11. تحميل المنتجات في لوحة التحكم
-// ============================================================
-let dashboardProducts = [];
-
 function loadDashboardProducts() {
   const list = document.getElementById('dash-product-list');
   const emptyState = document.getElementById('dash-empty-state');
 
   listenToProducts((products) => {
-    dashboardProducts = products;
-    
+    populateCategorySuggestions(products);
     list.innerHTML = '';
 
     if (!products.length) {
@@ -474,7 +733,7 @@ function loadDashboardProducts() {
       row.dataset.id = p.id;
 
       const thumbHTML = p.image
-        ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
+        ? `<img src="${p.image}" alt="${escapeAttr(p.name)}">`
         : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
       row.innerHTML = `
@@ -483,6 +742,9 @@ function loadDashboardProducts() {
           <input type="text" data-field="name" value="${escapeAttr(p.name)}" aria-label="اسم المنتج">
           <div class="field-inline">
             <input type="number" data-field="price" value="${p.price}" min="0" aria-label="السعر">
+            <input type="text" data-field="category" value="${escapeAttr(p.category || '')}" list="category-suggestions" placeholder="القسم" aria-label="القسم">
+          </div>
+          <div class="field-inline">
             <label class="btn btn-ghost btn-small" style="cursor:pointer;">
               تغيير الصورة
               <input type="file" accept="image/*" data-field="image-file" hidden>
@@ -514,17 +776,20 @@ function attachDashboardListeners(list) {
       flash._t = setTimeout(() => flash.classList.remove('show'), 1200);
     }
 
-    const nameInput = row.querySelector('[data-field="name"]');
-    nameInput.addEventListener('change', async () => {
-      const val = nameInput.value.trim();
+    row.querySelector('[data-field="name"]').addEventListener('change', async (e) => {
+      const val = e.target.value.trim();
       if (!val) return;
       await updateProduct(id, { name: val });
       flashSaved();
     });
 
-    const priceInput = row.querySelector('[data-field="price"]');
-    priceInput.addEventListener('change', async () => {
-      await updateProduct(id, { price: Number(priceInput.value) || 0 });
+    row.querySelector('[data-field="price"]').addEventListener('change', async (e) => {
+      await updateProduct(id, { price: Number(e.target.value) || 0 });
+      flashSaved();
+    });
+
+    row.querySelector('[data-field="category"]').addEventListener('change', async (e) => {
+      await updateProduct(id, { category: e.target.value.trim() });
       flashSaved();
     });
 
@@ -532,9 +797,9 @@ function attachDashboardListeners(list) {
     imageFileInput.addEventListener('change', async () => {
       const file = imageFileInput.files[0];
       if (!file) return;
-      
+
       if (file.size > 5 * 1024 * 1024) {
-        alert('الصورة كبيرة جداً');
+        toast('الصورة كبيرة جداً', 'error');
         imageFileInput.value = '';
         return;
       }
@@ -542,37 +807,34 @@ function attachDashboardListeners(list) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const compressed = await compressImage(e.target.result, 600, 600, 0.7);
-          const result = await uploadImage(id, compressed);
+          const compressed = await compressImage(e.target.result, 700, 700, 0.75);
+          toast('جاري رفع الصورة...', 'info');
+          const result = await uploadImage(compressed);
           if (result.success) {
             await updateProduct(id, { image: result.url });
             flashSaved();
-            loadDashboardProducts();
+            toast('تم تحديث الصورة ✓', 'success');
           } else {
-            alert('فشل رفع الصورة: ' + result.error);
+            toast('فشل رفع الصورة: ' + result.error, 'error');
           }
         } catch (error) {
           console.error('خطأ:', error);
-          alert('حدث خطأ في رفع الصورة');
+          toast('حدث خطأ في رفع الصورة', 'error');
         }
       };
       reader.readAsDataURL(file);
     });
 
-    const removeBtn = row.querySelector('[data-action="remove-image"]');
-    removeBtn.addEventListener('click', async () => {
-      await deleteImage(id);
+    row.querySelector('[data-action="remove-image"]').addEventListener('click', async () => {
+      await deleteImage();
       await updateProduct(id, { image: null });
       flashSaved();
-      loadDashboardProducts();
     });
 
-    const deleteBtn = row.querySelector('[data-action="delete"]');
-    deleteBtn.addEventListener('click', async () => {
+    row.querySelector('[data-action="delete"]').addEventListener('click', async () => {
       if (!confirm('حذف هذا المنتج نهائياً؟')) return;
       await deleteProduct(id);
-      await deleteImage(id);
-      loadDashboardProducts();
+      await deleteImage();
     });
   });
 }
@@ -583,6 +845,9 @@ function attachDashboardListeners(list) {
 document.addEventListener('DOMContentLoaded', () => {
   initShared();
   renderContactLinks();
+  initCart();
+  initQuickView();
+  initStorefrontSearch();
   initDashboard();
 
   const isDashboard = document.querySelector('.dashboard-body');
