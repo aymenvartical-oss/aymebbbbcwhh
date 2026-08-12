@@ -16,7 +16,7 @@
     <span class="logo-facet" aria-hidden="true"></span>
     <span class="logo-text">SAC <em>DIAMANT</em></span>
   </a>
-  <span class="dash-title">لوحة إدارة المتجر</span>
+  <span class="dash-title">لوحة التحكم</span>
   <a href="index.html" class="btn btn-ghost btn-small">عرض المتجر</a>
 </header>
 
@@ -50,7 +50,7 @@
     <form id="product-form" class="product-form">
       <div class="form-row">
         <label for="p-name">اسم المنتج</label>
-        <input type="text" id="p-name" placeholder="مثال: حقيبة فاخرة باللون الذهبي" required>
+        <input type="text" id="p-name" placeholder="مثال: حقيبة يد جلدية" required>
       </div>
 
       <div class="form-row">
@@ -59,25 +59,25 @@
       </div>
 
       <div class="form-row">
-        <label for="p-desc">الوصف التفصيلي</label>
-        <textarea id="p-desc" rows="3" placeholder="تفاصيل المنتج، نوع الجلد، الخامة، الخ..."></textarea>
+        <label for="p-desc">الوصف (اختياري)</label>
+        <textarea id="p-desc" rows="3" placeholder="تفاصيل قصيرة عن القطعة..."></textarea>
       </div>
 
       <div class="form-row">
-        <label for="p-images">صور المنتج (يمكنك تحديد أكثر من صورة)</label>
+        <label for="p-image">صورة المنتج</label>
         <div class="image-upload">
           <div class="image-preview" id="image-preview">
-            <span class="preview-placeholder">لم يتم تحديد صور بعد</span>
+            <span class="preview-placeholder">لا توجد صورة</span>
           </div>
           <div class="image-upload-actions">
-            <label for="p-images" class="btn btn-ghost btn-small file-label">اختيار صور متعددة</label>
-            <input type="file" id="p-images" accept="image/*" multiple hidden>
-            <button type="button" id="remove-image-btn" class="btn btn-outline-danger btn-small" disabled>إلغاء تحديد الصور</button>
+            <label for="p-image" class="btn btn-ghost btn-small file-label">اختيار صورة</label>
+            <input type="file" id="p-image" accept="image/*" hidden>
+            <button type="button" id="remove-image-btn" class="btn btn-outline-danger btn-small" disabled>إزالة الصورة</button>
           </div>
         </div>
       </div>
 
-      <button type="submit" class="btn btn-gold btn-block">إضافة المنتج إلى المتجر</button>
+      <button type="submit" class="btn btn-gold btn-block">إضافة المنتج</button>
     </form>
   </section>
 
@@ -92,16 +92,8 @@
     <div id="dash-empty-state" class="empty-state" hidden>
       <span class="diamond-icon-lg" aria-hidden="true"></span>
       <p>لم تضيفي أي منتج بعد</p>
+      <span class="empty-sub">استخدمي النموذج أعلاه لإضافة أول قطعة</span>
     </div>
-  </section>
-
-  <!-- سجل الطلبات الواردة من الموقع -->
-  <section class="dash-panel orders-panel" style="grid-column: 1 / -1;">
-    <div class="panel-head">
-      <span class="diamond-bullet"></span>
-      <h2>طلبات العملاء من الموقع المباشر</h2>
-    </div>
-    <div id="orders-list"></div>
   </section>
 
 </main>

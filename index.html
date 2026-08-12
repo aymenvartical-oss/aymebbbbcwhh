@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sac Diamant — الفخامة والأنقاط</title>
+<title>Sac Diamant — متجر أنيق</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,10 +20,8 @@
   </a>
   <nav class="main-nav">
     <a href="#products">المجموعة</a>
-    <a href="#giveaway">المسابقات</a>
-    <a href="#reviews">آراء العملاء</a>
     <a href="#about">من نحن</a>
-    <a href="#contact">تواصل معنا</a>
+    <a href="#contact">تواصل</a>
   </nav>
   <button class="menu-toggle" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">
     <span></span><span></span><span></span>
@@ -40,12 +38,12 @@
       <span class="facet f5"></span>
     </div>
     <div class="hero-content">
-      <p class="eyebrow"><span class="diamond-bullet"></span> تشكيلة حصرية وفخمة</p>
-      <h1>بريقٌ فريد<br>يليق بذوقك الرفيع</h1>
-      <p class="hero-sub">حقائب مصممة ومختارة بعناية لتجعل حضورك متألقاً في كل المناسبات — أعداد محدودة وتصاميم استثنائية.</p>
+      <p class="eyebrow"><span class="diamond-bullet"></span> مجموعة مختارة بعناية</p>
+      <h1>بريقٌ<br>يليقُ باختيارك</h1>
+      <p class="hero-sub">قطع مختارة بعناية من خزانتي الخاصة — كل قطعة محدودة، وكل تفصيل مدروس.</p>
       <div class="hero-actions">
-        <a href="#products" class="btn btn-gold">تصفح التشكيلة</a>
-        <a href="#giveaway" class="btn btn-ghost">عجلة الحظ والجوائز</a>
+        <a href="#products" class="btn btn-gold">تصفّحي المجموعة</a>
+        <a href="#contact" class="btn btn-ghost">تواصلي معي</a>
       </div>
     </div>
     <div class="scroll-hint" aria-hidden="true">
@@ -55,9 +53,9 @@
 
   <section class="products" id="products">
     <div class="section-head">
-      <p class="eyebrow"><span class="diamond-bullet"></span> المعروضات الحالية</p>
-      <h2>تشكيلة الحقائب</h2>
-      <p class="section-sub">قطع نادرة وبكميات محدودة — احصلي على قطعتك المفضل الآن</p>
+      <p class="eyebrow"><span class="diamond-bullet"></span> المتوفر الآن</p>
+      <h2>المجموعة</h2>
+      <p class="section-sub">قطع بكمية محدودة — ما ينفد لا يعود</p>
     </div>
 
     <div id="product-grid" class="product-grid"></div>
@@ -65,111 +63,27 @@
     <div id="empty-state" class="empty-state" hidden>
       <span class="diamond-icon-lg" aria-hidden="true"></span>
       <p>لا توجد منتجات معروضة حالياً</p>
-      <span class="empty-sub">ترقبي إطلاق التشكيلة الجديدة قريباً</span>
-    </div>
-  </section>
-
-  <!-- قسم المسابقات والعروض الخلاق -->
-  <section class="giveaway-section" id="giveaway">
-    <div class="section-head">
-      <p class="eyebrow"><span class="diamond-bullet"></span> فرص وحظوظ استثنائية</p>
-      <h2>مسابقة الفخامة & عجلة الحظ</h2>
-      <p class="section-sub">اديري عجلة الحظ واكسبي فرصة الفوز بحقيبة فاخرة أو خصومات مباشرة على طلبك!</p>
-    </div>
-    <div class="wheel-wrapper">
-      <div class="wheel-container">
-        <div class="wheel" id="wheel">
-          <div class="wheel-segment" style="--i:1;">حقيبة هدية</div>
-          <div class="wheel-segment" style="--i:2;">خصم 10%</div>
-          <div class="wheel-segment" style="--i:3;">حظ أفضل</div>
-          <div class="wheel-segment" style="--i:4;">شحن مجاني</div>
-          <div class="wheel-segment" style="--i:5;">خصم 20%</div>
-          <div class="wheel-segment" style="--i:6;">قسيمة شرائية</div>
-        </div>
-        <div class="wheel-pointer">▼</div>
-      </div>
-      <form id="giveaway-form" class="giveaway-form">
-        <h3>سجلي في المسابقة لتفعيل العجلة</h3>
-        <input type="text" id="g-name" placeholder="الاسم الكامل" required>
-        <input type="tel" id="g-phone" placeholder="رقم الهاتف" required>
-        <button type="submit" id="spin-btn" class="btn btn-gold btn-block">تدوير العجلة الآن 🎁</button>
-        <p id="giveaway-result" class="giveaway-result" hidden></p>
-      </form>
-    </div>
-  </section>
-
-  <!-- قسم آراء العملاء -->
-  <section class="reviews-section" id="reviews">
-    <div class="section-head">
-      <p class="eyebrow"><span class="diamond-bullet"></span> شهادات نعتز بها</p>
-      <h2>آراء عميلاتنا</h2>
-    </div>
-    <div id="reviews-grid" class="reviews-grid"></div>
-
-    <div class="add-review-box">
-      <h3>شاركينا رأيك بالمنتج</h3>
-      <form id="review-form">
-        <input type="text" id="rev-name" placeholder="الاسم" required>
-        <select id="rev-rating" required>
-          <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
-          <option value="4">⭐⭐⭐⭐ (4/5)</option>
-          <option value="3">⭐⭐⭐ (3/5)</option>
-        </select>
-        <textarea id="rev-comment" rows="3" placeholder="اكتبي انطباعك ورأيك في الحقيبة ورقي التعامل..." required></textarea>
-        <button type="submit" class="btn btn-gold btn-small">إرسال التقيم</button>
-      </form>
+      <span class="empty-sub">تابعينا قريباً لمجموعة جديدة</span>
     </div>
   </section>
 
   <section class="about" id="about">
     <div class="about-inner">
       <span class="diamond-icon-lg" aria-hidden="true"></span>
-      <h2>عن Sac Diamant</h2>
-      <p>نحن نوفر تجربة تسوق فريدة ومخصصة لعاشقات الأناقة والرقي. كل حقيبة نعرضها هي قطعة نادرة مصممة بجودة عالية لتعكس حضورك وشخصيتك المتميزة.</p>
+      <h2>عن سَاك ديامان</h2>
+      <p>متجر صغير بلمسة شخصية — قطع أختارها بنفسي، من حقائب وإكسسوارات، لأقدّم لكِ ما يستحق فعلاً أن يُقتنى. كل قطعة تُعرض هنا محدودة العدد، وتُباع لأول من يطلب.</p>
     </div>
   </section>
 
   <section class="contact" id="contact">
     <div class="contact-inner">
-      <p class="eyebrow"><span class="diamond-bullet"></span> خدمة العملاء</p>
-      <h2>تواصل معنا للطلب والاستفسار</h2>
-      <p class="section-sub">يمكنك الطلب مباشرة من الموقع أو للتواصل عبر شبكات التواصل الاجتماعي</p>
+      <p class="eyebrow"><span class="diamond-bullet"></span> جاهزة لطلبك</p>
+      <h2>تواصلي للطلب</h2>
+      <p class="section-sub">أسرع طريقة هي واتساب — اضغطي على "اطلب" تحت أي قطعة، أو راسليني مباشرة من هنا</p>
       <div class="contact-links" id="contact-links"></div>
     </div>
   </section>
 </main>
-
-<!-- Modal الطلب المباشر من الموقع -->
-<div id="order-modal" class="modal" hidden>
-  <div class="modal-content">
-    <button class="modal-close" id="close-modal">&times;</button>
-    <h2>استكمال الطلب المباشر</h2>
-    <form id="direct-order-form">
-      <input type="hidden" id="ord-product-id">
-      <div class="form-row">
-        <label>المنتج المحدد:</label>
-        <input type="text" id="ord-product-name" readonly>
-      </div>
-      <div class="form-row">
-        <label>المبلغ الإجمالي:</label>
-        <input type="text" id="ord-product-price" readonly>
-      </div>
-      <div class="form-row">
-        <label>الاسم الكامل</label>
-        <input type="text" id="ord-client-name" placeholder="أدخلي اسمك الكامل" required>
-      </div>
-      <div class="form-row">
-        <label>رقم الهاتف</label>
-        <input type="tel" id="ord-client-phone" placeholder="06XXXXXXXX" required>
-      </div>
-      <div class="form-row">
-        <label>الولاية / المدينة</label>
-        <input type="text" id="ord-client-city" placeholder="أدخلي ولايتك وعنوانك" required>
-      </div>
-      <button type="submit" class="btn btn-gold btn-block">تأكيد الطلب الآن</button>
-    </form>
-  </div>
-</div>
 
 <footer class="site-footer">
   <span class="diamond-bullet small" aria-hidden="true"></span>
