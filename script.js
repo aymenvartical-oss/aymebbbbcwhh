@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (النسخة المصححة النهائية)
+   SAC DIAMANT — script.js (مع إصلاح روابط الصور)
    ===================================================================== */
 
 // ============================================================
@@ -209,6 +209,7 @@ async function uploadImageToCloudinary(imageDataUrl) {
 
     if (data.secure_url) {
       console.log('✅ تم رفع الصورة بنجاح:', data.secure_url);
+      // ✅ استخدام secure_url لحفظه في قاعدة البيانات
       return { success: true, url: data.secure_url };
     }
 
@@ -229,7 +230,27 @@ async function deleteImage() {
 }
 
 // ============================================================
-// 8. عناصر مشتركة
+// 8. دوال عرض الصور - محاولة بدائل متعددة
+// ============================================================
+function getImageUrl(product) {
+  // الحصول على رابط الصورة من المنتج
+  let url = product.image || product.imageUrl || '';
+  
+  if (!url || typeof url !== 'string') return '';
+  
+  // ✅ إذا كان الرابط https://res.cloudinary.com -> جرب بديل http
+  if (url.startsWith('https://res.cloudinary.com')) {
+    // حاول استخدام http بدلاً من https (قد يكون محجوباً)
+    const httpUrl = url.replace('https://', 'http://');
+    console.log(`🔄 محاولة استخدام http بدلاً من https: ${httpUrl}`);
+    return httpUrl;
+  }
+  
+  return url;
+}
+
+// ============================================================
+// 9. عناصر مشتركة
 // ============================================================
 function initShared() {
   const yearEl = document.getElementById('year');
@@ -262,7 +283,7 @@ function initShared() {
 }
 
 // ============================================================
-// 9. سلة التسوق
+// 10. سلة التسوق
 // ============================================================
 const CART_KEY = 'sacDiamantCart';
 let cart = [];
@@ -328,7 +349,7 @@ function renderCartUI() {
   } else {
     itemsEl.innerHTML = cart.map(item => `
       <div class="cart-item" data-id="${item.id}">
-        <div class="cart-item-thumb">${item.image ? `<img src="${item.image}" alt="${escapeAttr(item.name)}">` : `<span class="diamond-icon-lg" style="width:26px;height:26px;"></span>`}</div>
+        <div class="cart-item-thumb">${item.image ? `<img src="${item.image}" alt="${escapeAttr(item.name)}" onerror="this.style.display='none'">` : `<span class="diamond-icon-lg" style="width:26px;height:26px;"></span>`}</div>
         <div class="cart-item-info">
           <h4>${escapeHTML(item.name)}</h4>
           <p class="price">${formatPrice(item.price)}</p>
@@ -389,7 +410,7 @@ function initCart() {
 }
 
 // ============================================================
-// 10. المتجر (index.html)
+// 11. المتجر (index.html)
 // ============================================================
 let storefrontProducts = [];
 let currentCategory = 'الكل';
@@ -433,7 +454,7 @@ function applyStorefrontFilters() {
 }
 
 // ============================================================
-// 10.1 عرض المنتجات (المصحح)
+// 11.1 عرض المنتجات (مع محاولة بدائل الصور)
 // ============================================================
 function renderProductGrid(products) {
   const grid = document.getElementById('product-grid');
@@ -452,15 +473,10 @@ function renderProductGrid(products) {
     const card = document.createElement('article');
     card.className = 'product-card';
 
-    // ✅ الحصول على رابط الصورة من الحقل الصحيح
-    let imageUrl = null;
-    if (p.image && typeof p.image === 'string' && p.image.startsWith('http')) {
-      imageUrl = p.image;
-    } else if (p.imageUrl && typeof p.imageUrl === 'string' && p.imageUrl.startsWith('http')) {
-      imageUrl = p.imageUrl;
-    }
-
+    // ✅ استخدام الدالة الجديدة للحصول على الرابط
+    const imageUrl = getImageUrl(p);
     console.log(`🖼️ [${p.name}] image:`, p.image);
+    console.log(`🖼️ [${p.name}] الرابط المستخدم:`, imageUrl);
 
     let imageHTML = '';
     if (imageUrl) {
@@ -513,13 +529,14 @@ function renderContactLinks() {
 }
 
 // ============================================================
-// 10.2 Quick view modal (المصحح)
+// 11.2 Quick view modal (مع محاولة بدائل الصور)
 // ============================================================
 function openQuickView(product) {
   const overlay = document.getElementById('quickView');
   if (!overlay) return;
 
-  let imageUrl = product.image || product.imageUrl || '';
+  // ✅ استخدام الدالة الجديدة للحصول على الرابط
+  const imageUrl = getImageUrl(product);
   console.log(`🔍 عرض تفاصيل ${product.name}:`, imageUrl);
 
   const imgEl = document.getElementById('qvImage');
@@ -579,7 +596,7 @@ function initStorefrontSearch() {
 }
 
 // ============================================================
-// 11. لوحة التحكم (dashboard.html)
+// 12. لوحة التحكم (dashboard.html)
 // ============================================================
 function setUploadStatus(text, type) {
   const el = document.getElementById('upload-status');
@@ -684,7 +701,7 @@ function initDashboard() {
   });
 
   // ============================================================
-  // نموذج إضافة المنتج (المصحح)
+  // نموذج إضافة المنتج
   // ============================================================
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -755,7 +772,7 @@ function initDashboard() {
 }
 
 // ============================================================
-// 11.1 تحميل المنتجات في لوحة التحكم
+// 12.1 تحميل المنتجات في لوحة التحكم
 // ============================================================
 function loadDashboardProducts() {
   const list = document.getElementById('dash-product-list');
@@ -776,9 +793,9 @@ function loadDashboardProducts() {
       row.className = 'dash-product-item';
       row.dataset.id = p.id;
 
-      let thumbUrl = p.image || p.imageUrl || null;
+      const thumbUrl = getImageUrl(p);
 
-      const thumbHTML = thumbUrl && thumbUrl.startsWith('http')
+      const thumbHTML = thumbUrl
         ? `<img src="${thumbUrl}" alt="${escapeAttr(p.name)}" onerror="this.style.display='none'">`
         : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
@@ -889,7 +906,7 @@ function attachDashboardListeners(list) {
 }
 
 // ============================================================
-// 12. تشغيل كل شيء
+// 13. تشغيل كل شيء
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   initShared();
