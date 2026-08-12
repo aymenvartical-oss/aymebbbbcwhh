@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (النسخة المصححة بالكامل)
+   SAC DIAMANT — script.js (النسخة المصححة النهائية)
    ===================================================================== */
 
 // ============================================================
@@ -433,7 +433,7 @@ function applyStorefrontFilters() {
 }
 
 // ============================================================
-// 10.1 عرض المنتجات (المصحح النهائي)
+// 10.1 عرض المنتجات (المصحح)
 // ============================================================
 function renderProductGrid(products) {
   const grid = document.getElementById('product-grid');
@@ -460,10 +460,7 @@ function renderProductGrid(products) {
       imageUrl = p.imageUrl;
     }
 
-    // ✅ طباعة الرابط للتحقق
     console.log(`🖼️ [${p.name}] image:`, p.image);
-    console.log(`🖼️ [${p.name}] imageUrl:`, p.imageUrl);
-    console.log(`🖼️ [${p.name}] الرابط المستخدم:`, imageUrl);
 
     let imageHTML = '';
     if (imageUrl) {
@@ -522,7 +519,6 @@ function openQuickView(product) {
   const overlay = document.getElementById('quickView');
   if (!overlay) return;
 
-  // ✅ استخدام نفس الحقل image
   let imageUrl = product.image || product.imageUrl || '';
   console.log(`🔍 عرض تفاصيل ${product.name}:`, imageUrl);
 
@@ -688,7 +684,7 @@ function initDashboard() {
   });
 
   // ============================================================
-  // نموذج إضافة المنتج (المصحح النهائي)
+  // نموذج إضافة المنتج (المصحح)
   // ============================================================
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -698,7 +694,7 @@ function initDashboard() {
       price: Number(priceInput.value) || 0,
       category: categoryInput.value.trim(),
       description: descInput.value.trim(),
-      image: null  // ✅ سنخزن الرابط هنا
+      image: null
     };
 
     if (!productData.name) {
@@ -712,14 +708,13 @@ function initDashboard() {
     submitBtn.disabled = true;
 
     try {
-      // ✅ رفع الصورة إلى Cloudinary والحصول على الرابط
       let imageUrl = null;
       if (pendingImage) {
         setUploadStatus('جاري رفع الصورة...', 'pending');
         const uploadResult = await uploadImage(pendingImage);
         if (uploadResult.success) {
-          imageUrl = uploadResult.url;  // ✅ secure_url من Cloudinary
-          console.log('✅ تم رفع الصورة بنجاح، الرابط:', imageUrl);
+          imageUrl = uploadResult.url;
+          console.log('✅ تم رفع الصورة بنجاح:', imageUrl);
           setUploadStatus('تم رفع الصورة ✓', 'success');
         } else {
           console.warn('⚠️ فشل رفع الصورة:', uploadResult.error);
@@ -728,7 +723,6 @@ function initDashboard() {
         }
       }
 
-      // ✅ حفظ الرابط في productData.image
       productData.image = imageUrl;
       console.log('📦 سيتم حفظ المنتج مع الصورة:', productData);
       
