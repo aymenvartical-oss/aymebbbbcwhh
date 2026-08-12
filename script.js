@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (Firebase + Cloudinary + سلة تسوق)
+   SAC DIAMANT — script.js (النسخة النهائية المجمعة والمصححة)
    ===================================================================== */
 
 // ============================================================
@@ -24,7 +24,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ============================================================
-// 2. إعداد Firebase — بدون أي تغيير
+// 2. إعداد Firebase
 // ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDmDukDO-iVEOwaE2XF9PxwbFg9elplIqM",
@@ -41,10 +41,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // ============================================================
-// 3. إعدادات Cloudinary
-//    مهم: الرفع هنا "Unsigned" عبر upload_preset فقط —
-//    لا تضيفي أبداً API Key أو API Secret هنا، فهذا الملف
-//    مرئي للجميع في المتصفح ولا داعي لهما إطلاقاً بهذه الطريقة.
+// 3. إعدادات Cloudinary (المفتاح الصحيح)
 // ============================================================
 const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
 const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
@@ -53,7 +50,7 @@ const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
 // 4. إعدادات التواصل
 // ============================================================
 const WHATSAPP_NUMBER    = '213000000000';
-const FACEBOOK_USERNAME  = 'https://www.facebook.com/sac.diamant';
+const FACEBOOK_USERNAME  = 'sac.diamant';
 const INSTAGRAM_USERNAME = 'sac_diamant';
 
 const ICONS = {
@@ -100,11 +97,14 @@ function escapeAttr(str) {
 }
 
 // ============================================================
-// 5.1 إشعارات (Toast) — تحل محل alert() في أغلب الحالات
+// 5.1 إشعارات (Toast)
 // ============================================================
 function toast(message, type = 'info') {
   const stack = document.getElementById('toastStack');
-  if (!stack) return;
+  if (!stack) {
+    console.log(message);
+    return;
+  }
   const el = document.createElement('div');
   el.className = `toast ${type}`;
   el.textContent = message;
@@ -113,7 +113,7 @@ function toast(message, type = 'info') {
 }
 
 // ============================================================
-// 6. دوال Firebase — بدون أي تغيير في المنطق
+// 6. دوال Firebase
 // ============================================================
 function listenToProducts(callback) {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -160,7 +160,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور — Cloudinary (Unsigned فقط)
+// 7. دوال رفع الصور — Cloudinary (محسنة)
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -207,21 +207,16 @@ async function uploadImageToCloudinary(imageDataUrl) {
     const data = await response.json();
 
     if (data.secure_url) {
+      console.log('✅ تم رفع الصورة بنجاح:', data.secure_url);
       return { success: true, url: data.secure_url };
     }
 
-    console.error('خطأ Cloudinary:', data);
-    const rawMessage = data.error?.message || '';
-    let friendlyError = rawMessage || 'فشل رفع الصورة لسبب غير معروف';
-    if (/preset/i.test(rawMessage)) {
-      friendlyError = 'إعداد رفع الصور (upload preset) غير صحيح أو غير مضبوط على Unsigned في لوحة Cloudinary';
-    } else if (/cloud[_ ]?name/i.test(rawMessage) || response.status === 404) {
-      friendlyError = 'اسم الحزمة (cloud name) غير صحيح';
-    }
+    console.error('❌ خطأ Cloudinary:', data);
+    let friendlyError = data.error?.message || 'فشل رفع الصورة';
     return { success: false, error: friendlyError };
   } catch (error) {
-    console.error("خطأ في رفع الصورة:", error);
-    return { success: false, error: 'تعذّر الاتصال بخادم رفع الصور — تأكدي من الإنترنت وحاولي مجدداً' };
+    console.error("❌ خطأ في رفع الصورة:", error);
+    return { success: false, error: error.message || 'تعذّر الاتصال بالخادم' };
   }
 }
 
@@ -230,7 +225,6 @@ async function uploadImage(imageDataUrl) {
 }
 
 async function deleteImage() {
-  // Cloudinary يتطلب توقيعاً من الخادم لحذف الصور فعلياً؛ يُتجاهل هنا عمداً.
   return { success: true };
 }
 
@@ -373,7 +367,7 @@ function checkoutViaWhatsApp() {
 
 function initCart() {
   const cartItemsEl = document.getElementById('cartItems');
-  if (!cartItemsEl) return; // صفحة لا تحتوي سلة (لوحة التحكم)
+  if (!cartItemsEl) return;
 
   loadCart();
   renderCartUI();
@@ -455,8 +449,12 @@ function renderProductGrid(products) {
     const card = document.createElement('article');
     card.className = 'product-card';
 
-    const imageHTML = p.image
-      ? `<img src="${p.image}" alt="${escapeAttr(p.name)}" loading="lazy">`
+    let imageUrl = null;
+    if (p.image) imageUrl = p.image;
+    else if (p.images && p.images.length > 0) imageUrl = p.images[0];
+
+    const imageHTML = imageUrl
+      ? `<img src="${imageUrl}" alt="${escapeAttr(p.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\'diamond-icon-lg\' aria-hidden=\'true\'></span>'">`
       : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
     const catHTML = p.category ? `<span class="product-cat">${escapeHTML(p.category)}</span>` : '';
@@ -498,21 +496,31 @@ function renderContactLinks() {
   el.innerHTML = orderRowHTML(buildOrderLinks(null));
 }
 
-// ---- Quick view modal ----
+// ============================================================
+// 10.1 Quick view modal
+// ============================================================
 function openQuickView(product) {
   const overlay = document.getElementById('quickView');
   if (!overlay) return;
 
-  document.getElementById('qvImage').src = product.image || '';
-  document.getElementById('qvImage').alt = product.name;
-  document.getElementById('qvCat').textContent = product.category || '';
-  document.getElementById('qvName').textContent = product.name;
-  document.getElementById('qvPrice').textContent = formatPrice(product.price);
-  document.getElementById('qvDesc').textContent = product.description || '';
-  document.getElementById('qvOrderRow').innerHTML = orderRowHTML(buildOrderLinks(product));
+  const imgEl = document.getElementById('qvImage');
+  if (imgEl) {
+    imgEl.src = product.image || '';
+    imgEl.alt = product.name;
+  }
+  const catEl = document.getElementById('qvCat');
+  if (catEl) catEl.textContent = product.category || '';
+  const nameEl = document.getElementById('qvName');
+  if (nameEl) nameEl.textContent = product.name;
+  const priceEl = document.getElementById('qvPrice');
+  if (priceEl) priceEl.textContent = formatPrice(product.price);
+  const descEl = document.getElementById('qvDesc');
+  if (descEl) descEl.textContent = product.description || '';
+  const orderRowEl = document.getElementById('qvOrderRow');
+  if (orderRowEl) orderRowEl.innerHTML = orderRowHTML(buildOrderLinks(product));
 
   const addBtn = document.getElementById('qvAddToCart');
-  addBtn.onclick = () => addToCart(product, 1);
+  if (addBtn) addBtn.onclick = () => addToCart(product, 1);
 
   overlay.classList.add('open');
 }
@@ -690,10 +698,11 @@ function initDashboard() {
         if (uploadResult.success) {
           await updateProduct(productId, { image: uploadResult.url });
           setUploadStatus('تم رفع الصورة ✓', 'success');
+          toast('تم رفع الصورة بنجاح ✓', 'success');
         } else {
-          console.warn('تم إضافة المنتج لكن فشل رفع الصورة:', uploadResult.error);
-          setUploadStatus('فشل رفع الصورة: ' + uploadResult.error, 'error');
-          toast('تم إضافة المنتج لكن فشل رفع الصورة — يمكنك تغييرها من القائمة أدناه', 'error');
+          console.warn('فشل رفع الصورة:', uploadResult.error);
+          setUploadStatus('فشل رفع الصورة', 'error');
+          toast('تم إضافة المنتج لكن فشل رفع الصورة', 'error');
         }
       }
 
@@ -702,7 +711,7 @@ function initDashboard() {
       imagePreview.innerHTML = `<span class="preview-placeholder">لا توجد صورة</span>`;
       removeImageBtn.disabled = true;
 
-      toast('تم إضافة المنتج بنجاح ✨', 'success');
+      toast('✅ تم إضافة المنتج بنجاح!', 'success');
     } catch (error) {
       console.error('خطأ:', error);
       toast('حدث خطأ غير متوقع: ' + error.message, 'error');
@@ -713,6 +722,9 @@ function initDashboard() {
   });
 }
 
+// ============================================================
+// 11.1 تحميل المنتجات في لوحة التحكم
+// ============================================================
 function loadDashboardProducts() {
   const list = document.getElementById('dash-product-list');
   const emptyState = document.getElementById('dash-empty-state');
@@ -732,8 +744,12 @@ function loadDashboardProducts() {
       row.className = 'dash-product-item';
       row.dataset.id = p.id;
 
-      const thumbHTML = p.image
-        ? `<img src="${p.image}" alt="${escapeAttr(p.name)}">`
+      let thumbUrl = null;
+      if (p.image) thumbUrl = p.image;
+      else if (p.images && p.images.length > 0) thumbUrl = p.images[0];
+
+      const thumbHTML = thumbUrl
+        ? `<img src="${thumbUrl}" alt="${escapeAttr(p.name)}" onerror="this.style.display='none'">`
         : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
       row.innerHTML = `
@@ -749,7 +765,7 @@ function loadDashboardProducts() {
               تغيير الصورة
               <input type="file" accept="image/*" data-field="image-file" hidden>
             </label>
-            <button type="button" class="btn btn-outline-danger btn-small" data-action="remove-image" ${p.image ? '' : 'disabled'}>إزالة الصورة</button>
+            <button type="button" class="btn btn-outline-danger btn-small" data-action="remove-image" ${thumbUrl ? '' : 'disabled'}>إزالة الصورة</button>
           </div>
           <span class="save-flash" data-role="flash">تم الحفظ ✓</span>
         </div>
@@ -814,6 +830,7 @@ function attachDashboardListeners(list) {
             await updateProduct(id, { image: result.url });
             flashSaved();
             toast('تم تحديث الصورة ✓', 'success');
+            loadDashboardProducts();
           } else {
             toast('فشل رفع الصورة: ' + result.error, 'error');
           }
@@ -829,12 +846,14 @@ function attachDashboardListeners(list) {
       await deleteImage();
       await updateProduct(id, { image: null });
       flashSaved();
+      loadDashboardProducts();
     });
 
     row.querySelector('[data-action="delete"]').addEventListener('click', async () => {
       if (!confirm('حذف هذا المنتج نهائياً؟')) return;
       await deleteProduct(id);
       await deleteImage();
+      loadDashboardProducts();
     });
   });
 }
