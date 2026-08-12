@@ -118,11 +118,11 @@
   <section class="contest" id="contest">
     <div class="contest-inner">
       <span class="diamond-icon-lg" aria-hidden="true"></span>
-      <h2>🎉 مسابقة الشهر</h2>
+      <h2>🎉 المسابقة الشهرية</h2>
       <p class="contest-sub">شاركي في المسابقة واربحي حقيبة مجانية!</p>
-      <div class="contest-prize">
+      <div class="contest-prize" id="current-contest-prize">
         <span class="prize-bag">👜</span>
-        <span class="prize-label">حقيبة يد فاخرة</span>
+        <span class="prize-label" id="contest-prize-text">حقيبة يد فاخرة</span>
       </div>
       <form id="contest-form" class="contest-form">
         <div class="form-row">
@@ -139,7 +139,9 @@
         </div>
         <button type="submit" class="btn btn-gold btn-block">اشتركي في المسابقة 🎁</button>
       </form>
-      <p class="contest-winner" id="contest-winner" hidden>🏆 الفائزة السابقة: <span id="winner-name">سارة أحمد</span></p>
+      <div id="contest-winner" class="contest-winner" hidden>
+        🏆 الفائزة السابقة: <span id="winner-name"></span>
+      </div>
     </div>
   </section>
 
@@ -159,14 +161,16 @@
       <h2>تواصلي للطلب</h2>
       <p class="section-sub">أسرع طريقة هي واتساب — اضغطي على "اطلب" تحت أي قطعة، أو راسليني مباشرة من هنا</p>
       <div class="contact-links" id="contact-links"></div>
-      <!-- نموذج طلب سريع -->
       <form id="quick-order-form" class="quick-order-form">
-        <h3>اطلبي الآن</h3>
+        <h3>📩 طلب سريع</h3>
         <div class="form-row">
           <input type="text" id="order-name" placeholder="اسمك" required>
         </div>
         <div class="form-row">
           <input type="text" id="order-product" placeholder="اسم المنتج المطلوب" required>
+        </div>
+        <div class="form-row">
+          <input type="text" id="order-phone" placeholder="رقم هاتفك">
         </div>
         <div class="form-row">
           <textarea id="order-note" rows="3" placeholder="أي تفاصيل إضافية..."></textarea>
