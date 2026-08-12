@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (المفتاح مصحح)
+   SAC DIAMANT — script.js (مع Firebase + Cloudinary)
    ===================================================================== */
 
 // ============================================================
@@ -43,17 +43,19 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // ============================================================
-// 3. إعدادات Cloudinary (المفتاح مصحح)
+// 3. إعدادات Cloudinary
 // ============================================================
 const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
 const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
-const CLOUDINARY_API_KEY = 'aqmgyMSmaIO2cQd1b3i9GjVnyEM';
+// ملاحظة: لا حاجة لـ API Key أو API Secret هنا إطلاقاً — الرفع "Unsigned"
+// يعتمد فقط على upload_preset. وضع أي مفتاح سرّي هنا يعرّض حسابك للخطر
+// لأن الكود مرئي للجميع في المتصفح.
 
 // ============================================================
 // 4. إعدادات التواصل
 // ============================================================
 const WHATSAPP_NUMBER    = '213000000000';
-const FACEBOOK_USERNAME  = 'sac.diamant';
+const FACEBOOK_USERNAME  = 'https://www.facebook.com/sac.diamant';
 const INSTAGRAM_USERNAME = 'sac_diamant';
 
 const ICONS = {
@@ -149,7 +151,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور - باستخدام Cloudinary (مصححة)
+// 7. دوال رفع الصور - باستخدام Cloudinary
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -187,7 +189,6 @@ async function uploadImageToCloudinary(imageDataUrl) {
     const formData = new FormData();
     formData.append('file', compressedImage);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    formData.append('api_key', CLOUDINARY_API_KEY);
     
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
@@ -200,20 +201,19 @@ async function uploadImageToCloudinary(imageDataUrl) {
     const data = await response.json();
     
     if (data.secure_url) {
-      console.log('✅ تم رفع الصورة بنجاح:', data.secure_url);
       return { 
         success: true, 
         url: data.secure_url
       };
     } else {
-      console.error('❌ خطأ Cloudinary:', data);
+      console.error('خطأ Cloudinary:', data);
       return { 
         success: false, 
         error: data.error?.message || 'فشل رفع الصورة'
       };
     }
   } catch (error) {
-    console.error("❌ خطأ في رفع الصورة:", error);
+    console.error("خطأ في رفع الصورة:", error);
     return { success: false, error: error.message };
   }
 }
@@ -223,7 +223,7 @@ async function uploadImage(productId, imageDataUrl) {
 }
 
 async function deleteImage(productId) {
-  console.log('تم تجاهل حذف الصورة');
+  console.log('تم تجاهل حذف الصورة (Cloudinary يتطلب API Secret للحذف)');
   return { success: true };
 }
 
@@ -251,7 +251,7 @@ function initShared() {
 }
 
 // ============================================================
-// 9. المتجر (index.html) - عرض المنتجات
+// 9. المتجر (index.html)
 // ============================================================
 function renderStorefront(products) {
   const grid = document.getElementById('product-grid');
@@ -271,22 +271,9 @@ function renderStorefront(products) {
     const card = document.createElement('article');
     card.className = 'product-card';
 
-    let imageUrl = null;
-    
-    if (p.image) {
-      imageUrl = p.image;
-    } else if (p.images && p.images.length > 0) {
-      imageUrl = p.images[0];
-    } else if (p.imageUrl) {
-      imageUrl = p.imageUrl;
-    }
-    
-    let imageHTML = '';
-    if (imageUrl && imageUrl.startsWith('http')) {
-      imageHTML = `<img src="${imageUrl}" alt="${escapeHTML(p.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\'diamond-icon-lg\' aria-hidden=\'true\'></span>'">`;
-    } else {
-      imageHTML = `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
-    }
+    const imageHTML = p.image
+      ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
+      : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
     const descHTML = p.description
       ? `<p class="product-desc">${escapeHTML(p.description)}</p>`
@@ -404,7 +391,6 @@ function initDashboard() {
     removeImageBtn.disabled = true;
   });
 
-  // نموذج إضافة المنتج
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -426,19 +412,6 @@ function initDashboard() {
     submitBtn.disabled = true;
 
     try {
-      let imageUrl = null;
-      if (pendingImage) {
-        const uploadResult = await uploadImage(null, pendingImage);
-        if (uploadResult.success) {
-          imageUrl = uploadResult.url;
-          console.log('✅ تم رفع الصورة:', imageUrl);
-        } else {
-          console.warn('⚠️ فشل رفع الصورة:', uploadResult.error);
-        }
-      }
-
-      productData.image = imageUrl;
-      
       const result = await addProduct(productData);
       
       if (!result.success) {
@@ -448,14 +421,26 @@ function initDashboard() {
         return;
       }
 
+      const productId = result.id;
+
+      if (pendingImage) {
+        const uploadResult = await uploadImage(productId, pendingImage);
+        if (uploadResult.success) {
+          await updateProduct(productId, { image: uploadResult.url });
+        } else {
+          console.warn('تم إضافة المنتج لكن فشل رفع الصورة:', uploadResult.error);
+          alert('تم إضافة المنتج ولكن فشل رفع الصورة. يمكنك إعادة محاولة رفع الصورة لاحقاً.');
+        }
+      }
+
       form.reset();
       pendingImage = null;
       imagePreview.innerHTML = `<span class="preview-placeholder">لا توجد صورة</span>`;
       removeImageBtn.disabled = true;
 
-      alert('✅ تم إضافة المنتج بنجاح! ✨');
+      alert('تم إضافة المنتج بنجاح! ✨');
     } catch (error) {
-      console.error('❌ خطأ:', error);
+      console.error('خطأ:', error);
       alert('حدث خطأ غير متوقع: ' + error.message);
     } finally {
       submitBtn.textContent = originalText;
@@ -489,12 +474,8 @@ function loadDashboardProducts() {
       row.className = 'dash-product-item';
       row.dataset.id = p.id;
 
-      let thumbUrl = null;
-      if (p.image) thumbUrl = p.image;
-      else if (p.images && p.images.length > 0) thumbUrl = p.images[0];
-
-      const thumbHTML = thumbUrl
-        ? `<img src="${thumbUrl}" alt="${escapeHTML(p.name)}" onerror="this.style.display='none'">`
+      const thumbHTML = p.image
+        ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
         : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
       row.innerHTML = `
@@ -507,7 +488,7 @@ function loadDashboardProducts() {
               تغيير الصورة
               <input type="file" accept="image/*" data-field="image-file" hidden>
             </label>
-            <button type="button" class="btn btn-outline-danger btn-small" data-action="remove-image" ${thumbUrl ? '' : 'disabled'}>إزالة الصورة</button>
+            <button type="button" class="btn btn-outline-danger btn-small" data-action="remove-image" ${p.image ? '' : 'disabled'}>إزالة الصورة</button>
           </div>
           <span class="save-flash" data-role="flash">تم الحفظ ✓</span>
         </div>
