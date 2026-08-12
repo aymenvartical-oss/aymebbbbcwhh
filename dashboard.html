@@ -45,7 +45,7 @@
   <section class="dash-panel add-panel">
     <div class="panel-head">
       <span class="diamond-bullet"></span>
-      <h2>إضافة منتج جديد</h2>
+      <h2>➕ إضافة منتج جديد</h2>
     </div>
     <form id="product-form" class="product-form">
       <div class="form-row">
@@ -68,18 +68,18 @@
         <label>صور المنتج (اختر 3 صور كحد أقصى)</label>
         <div class="images-upload">
           <div class="images-preview" id="images-preview">
-            <span class="preview-placeholder">لا توجد صور</span>
+            <span class="preview-placeholder">📷 اختر صوراً من الجهاز</span>
           </div>
           <div class="images-upload-actions">
-            <label class="btn btn-ghost btn-small file-label">اختيار صور
+            <label class="btn btn-ghost btn-small file-label">📁 اختيار صور
               <input type="file" id="p-images" accept="image/*" multiple hidden>
             </label>
-            <button type="button" id="remove-images-btn" class="btn btn-outline-danger btn-small" disabled>إزالة الكل</button>
+            <button type="button" id="remove-images-btn" class="btn btn-outline-danger btn-small" disabled>🗑️ إزالة الكل</button>
           </div>
         </div>
-        <small class="form-hint">يمكنك اختيار 3 صور كحد أقصى</small>
+        <small class="form-hint">يمكنك اختيار 3 صور كحد أقصى (JPG, PNG)</small>
       </div>
-      <button type="submit" class="btn btn-gold btn-block">إضافة المنتج</button>
+      <button type="submit" class="btn btn-gold btn-block">✨ إضافة المنتج</button>
     </form>
   </section>
 
@@ -87,7 +87,7 @@
   <section class="dash-panel manage-panel">
     <div class="panel-head">
       <span class="diamond-bullet"></span>
-      <h2>المنتجات الحالية</h2>
+      <h2>📦 المنتجات الحالية</h2>
     </div>
     <div id="dash-product-list" class="dash-product-list"></div>
     <div id="dash-empty-state" class="empty-state" hidden>
@@ -97,15 +97,15 @@
     </div>
   </section>
 
-  <!-- ===== إدارة التقييمات ===== -->
-  <section class="dash-panel reviews-panel">
+  <!-- ===== الطلبات ===== -->
+  <section class="dash-panel orders-panel">
     <div class="panel-head">
       <span class="diamond-bullet"></span>
-      <h2>تقييمات الزبائن</h2>
+      <h2>📩 الطلبات الواردة</h2>
     </div>
-    <div id="dash-reviews-list" class="dash-reviews-list"></div>
-    <div id="dash-reviews-empty" class="empty-state" hidden>
-      <p>لا توجد تقييمات بعد</p>
+    <div id="dash-orders-list" class="dash-orders-list"></div>
+    <div id="dash-orders-empty" class="empty-state" hidden>
+      <p>لا توجد طلبات بعد</p>
     </div>
   </section>
 
@@ -113,13 +113,44 @@
   <section class="dash-panel contest-panel">
     <div class="panel-head">
       <span class="diamond-bullet"></span>
-      <h2>🎁 مشتركي المسابقة</h2>
+      <h2>🎁 إدارة المسابقة</h2>
     </div>
+    
+    <!-- إضافة مسابقة جديدة -->
+    <form id="contest-setup-form" class="contest-setup-form">
+      <div class="form-row">
+        <label for="contest-prize">الجائزة</label>
+        <input type="text" id="contest-prize" placeholder="مثال: حقيبة يد فاخرة" required>
+      </div>
+      <div class="form-row">
+        <label for="contest-description">وصف المسابقة</label>
+        <textarea id="contest-description" rows="2" placeholder="وصف المسابقة..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-gold btn-small">🎯 تحديث المسابقة</button>
+    </form>
+
+    <!-- المشتركين -->
+    <h3 style="margin-top: 1.5rem;">👥 المشتركين</h3>
     <div id="dash-contestants-list" class="dash-contestants-list"></div>
     <div id="dash-contestants-empty" class="empty-state" hidden>
       <p>لا يوجد مشتركين في المسابقة حالياً</p>
     </div>
-    <button id="pick-winner-btn" class="btn btn-gold btn-block" hidden>🎉 اختيار فائز عشوائي</button>
+    <button id="pick-winner-btn" class="btn btn-gold btn-block" style="margin-top: 1rem;" hidden>🎉 اختيار فائز عشوائي</button>
+    <div id="contest-winner-dash" class="contest-winner-dash" hidden>
+      🏆 الفائزة: <span id="winner-name-dash"></span>
+    </div>
+  </section>
+
+  <!-- ===== التقييمات ===== -->
+  <section class="dash-panel reviews-panel">
+    <div class="panel-head">
+      <span class="diamond-bullet"></span>
+      <h2>⭐ تقييمات الزبائن</h2>
+    </div>
+    <div id="dash-reviews-list" class="dash-reviews-list"></div>
+    <div id="dash-reviews-empty" class="empty-state" hidden>
+      <p>لا توجد تقييمات بعد</p>
+    </div>
   </section>
 
 </main>
