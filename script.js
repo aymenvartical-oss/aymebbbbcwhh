@@ -47,9 +47,7 @@ const auth = getAuth(app);
 // ============================================================
 const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
 const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
-// ملاحظة: لا حاجة لـ API Key أو API Secret هنا إطلاقاً — الرفع "Unsigned"
-// يعتمد فقط على upload_preset. وضع أي مفتاح سرّي هنا يعرّض حسابك للخطر
-// لأن الكود مرئي للجميع في المتصفح.
+const CLOUDINARY_API_KEY = 'f74f2K2eVN6HRaHOEezQqu4OnoU';
 
 // ============================================================
 // 4. إعدادات التواصل
@@ -189,6 +187,7 @@ async function uploadImageToCloudinary(imageDataUrl) {
     const formData = new FormData();
     formData.append('file', compressedImage);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('api_key', CLOUDINARY_API_KEY);
     
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
