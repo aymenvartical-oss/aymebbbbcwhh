@@ -1,15 +1,11 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (مع Firebase + Cloudinary)
+   SAC DIAMANT — script.js (تكامل شامل وتطبيق الخصائص الجديدة)
    ===================================================================== */
 
-// ============================================================
-// 1. استيراد Firebase
-// ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
   getFirestore, 
   collection, 
-  getDocs, 
   addDoc, 
   deleteDoc, 
   doc, 
@@ -21,12 +17,11 @@ import {
 import {
   getAuth,
   signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ============================================================
-// 2. إعداد Firebase
+// Firebase & Cloudinary Settings
 // ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDmDukDO-iVEOwaE2XF9PxwbFg9elplIqM",
@@ -42,16 +37,10 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// ============================================================
-// 3. إعدادات Cloudinary
-// ============================================================
 const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
 const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
 const CLOUDINARY_API_KEY = 'f74f2K2eVN6HRaHOEezQqu4OnoU';
 
-// ============================================================
-// 4. إعدادات التواصل
-// ============================================================
 const WHATSAPP_NUMBER    = '213000000000';
 const FACEBOOK_USERNAME  = 'https://www.facebook.com/sac.diamant';
 const INSTAGRAM_USERNAME = 'sac_diamant';
@@ -62,30 +51,8 @@ const ICONS = {
   instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17" cy="7" r="0.6" fill="currentColor" stroke="none"/></svg>'
 };
 
-function buildOrderLinks(product) {
-  const message = encodeURIComponent(
-    product ? `مرحباً، أرغب بطلب: ${product.name} — ${formatPrice(product.price)}` : 'مرحباً، أرغب بالاستفسار عن منتجاتكم'
-  );
-  return {
-    whatsapp: `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`,
-    facebook: `https://m.me/${FACEBOOK_USERNAME}`,
-    instagram: `https://instagram.com/${INSTAGRAM_USERNAME}`
-  };
-}
-
-function orderRowHTML(links) {
-  return `
-    <div class="order-row">
-      <span class="order-label">اطلبي عبر:</span>
-      <a class="icon-btn" href="${links.whatsapp}" target="_blank" rel="noopener" title="اطلب عبر واتساب">${ICONS.whatsapp}</a>
-      <a class="icon-btn" href="${links.facebook}" target="_blank" rel="noopener" title="تواصل عبر فيسبوك">${ICONS.facebook}</a>
-      <a class="icon-btn" href="${links.instagram}" target="_blank" rel="noopener" title="تواصل عبر إنستغرام">${ICONS.instagram}</a>
-    </div>
-  `;
-}
-
 // ============================================================
-// 5. دوال مساعدة
+// Helpers
 // ============================================================
 function formatPrice(price) {
   return Number(price).toLocaleString('ar-DZ') + ' د.ج';
@@ -97,498 +64,336 @@ function escapeHTML(str) {
   return div.innerHTML;
 }
 
-function escapeAttr(str) {
-  return escapeHTML(str).replace(/"/g, '&quot;');
+function buildOrderLinks(product) {
+  const message = encodeURIComponent(
+    product ? `مرحباً، أرغب باستفسار أو طلب: ${product.name} — ${formatPrice(product.price)}` : 'مرحباً، أرغب بالاستفسار عن المنتجات'
+  );
+  return {
+    whatsapp: `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`,
+    facebook: `https://m.me/${FACEBOOK_USERNAME}`,
+    instagram: `https://instagram.com/${INSTAGRAM_USERNAME}`
+  };
 }
 
 // ============================================================
-// 6. دوال Firebase
+// Firestore Handlers
 // ============================================================
 function listenToProducts(callback) {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
   return onSnapshot(q, (snapshot) => {
     const products = [];
-    snapshot.forEach((doc) => {
-      products.push({ id: doc.id, ...doc.data() });
-    });
+    snapshot.forEach((doc) => { products.push({ id: doc.id, ...doc.data() }); });
     callback(products);
   });
 }
 
-async function addProduct(productData) {
-  try {
-    const docRef = await addDoc(collection(db, "products"), {
-      ...productData,
-      createdAt: new Date().toISOString()
-    });
-    return { success: true, id: docRef.id };
-  } catch (error) {
-    console.error("خطأ في إضافة المنتج:", error);
-    return { success: false, error: error.message };
-  }
+function listenToReviews(callback) {
+  const q = query(collection(db, "reviews"), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const reviews = [];
+    snapshot.forEach((doc) => { reviews.push({ id: doc.id, ...doc.data() }); });
+    callback(reviews);
+  });
 }
 
-async function updateProduct(productId, data) {
-  try {
-    await updateDoc(doc(db, "products", productId), data);
-    return { success: true };
-  } catch (error) {
-    console.error("خطأ في تحديث المنتج:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-async function deleteProduct(productId) {
-  try {
-    await deleteDoc(doc(db, "products", productId));
-    return { success: true };
-  } catch (error) {
-    console.error("خطأ في حذف المنتج:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-// ============================================================
-// 7. دوال رفع الصور - باستخدام Cloudinary
-// ============================================================
-function compressImage(dataUrl, maxWidth, maxHeight, quality) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > maxWidth) {
-        height = (height * maxWidth) / width;
-        width = maxWidth;
-      }
-      if (height > maxHeight) {
-        width = (width * maxHeight) / height;
-        height = maxHeight;
-      }
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = reject;
-    img.src = dataUrl;
+function listenToOrders(callback) {
+  const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const orders = [];
+    snapshot.forEach((doc) => { orders.push({ id: doc.id, ...doc.data() }); });
+    callback(orders);
   });
 }
 
 async function uploadImageToCloudinary(imageDataUrl) {
   try {
-    const compressedImage = await compressImage(imageDataUrl, 600, 600, 0.7);
-    
     const formData = new FormData();
-    formData.append('file', compressedImage);
+    formData.append('file', imageDataUrl);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
     formData.append('api_key', CLOUDINARY_API_KEY);
     
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: formData
-      }
-    );
-    
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: formData
+    });
     const data = await response.json();
-    
-    if (data.secure_url) {
-      return { 
-        success: true, 
-        url: data.secure_url
-      };
-    } else {
-      console.error('خطأ Cloudinary:', data);
-      return { 
-        success: false, 
-        error: data.error?.message || 'فشل رفع الصورة'
-      };
-    }
+    return data.secure_url ? { success: true, url: data.secure_url } : { success: false, error: data.error?.message };
   } catch (error) {
-    console.error("خطأ في رفع الصورة:", error);
     return { success: false, error: error.message };
   }
 }
 
-async function uploadImage(productId, imageDataUrl) {
-  return await uploadImageToCloudinary(imageDataUrl);
-}
-
-async function deleteImage(productId) {
-  console.log('تم تجاهل حذف الصورة (Cloudinary يتطلب API Secret للحذف)');
-  return { success: true };
-}
-
 // ============================================================
-// 8. عناصر مشتركة
-// ============================================================
-function initShared() {
-  const yearEl = document.getElementById('year');
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
-
-  const menuToggle = document.getElementById('menuToggle');
-  const mainNav = document.querySelector('.main-nav');
-  if (menuToggle && mainNav) {
-    menuToggle.addEventListener('click', () => {
-      const isOpen = mainNav.classList.toggle('open');
-      menuToggle.setAttribute('aria-expanded', String(isOpen));
-    });
-    mainNav.querySelectorAll('a').forEach(a =>
-      a.addEventListener('click', () => {
-        mainNav.classList.remove('open');
-        menuToggle.setAttribute('aria-expanded', 'false');
-      })
-    );
-  }
-}
-
-// ============================================================
-// 9. المتجر (index.html)
+// Storefront Rendering
 // ============================================================
 function renderStorefront(products) {
   const grid = document.getElementById('product-grid');
   if (!grid) return;
-
-  const emptyState = document.getElementById('empty-state');
-
   grid.innerHTML = '';
-
-  if (!products || !products.length) {
-    if (emptyState) emptyState.hidden = false;
-    return;
-  }
-  if (emptyState) emptyState.hidden = true;
 
   products.forEach(p => {
     const card = document.createElement('article');
     card.className = 'product-card';
 
-    const imageHTML = p.image
-      ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
+    const images = (p.images && p.images.length > 0) ? p.images : (p.image ? [p.image] : []);
+    
+    let mainImgHTML = images.length > 0 
+      ? `<img src="${images[0]}" class="main-card-img" id="img-${p.id}" alt="${escapeHTML(p.name)}">`
       : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
-    const descHTML = p.description
-      ? `<p class="product-desc">${escapeHTML(p.description)}</p>`
-      : '';
+    let thumbsHTML = '';
+    if (images.length > 1) {
+      thumbsHTML = `<div class="product-thumbs">` + images.map((imgUrl, idx) => 
+        `<img src="${imgUrl}" class="thumb-img ${idx===0?'active':''}" onclick="changeProductImage('${p.id}', '${imgUrl}', this)">`
+      ).join('') + `</div>`;
+    }
 
     const links = buildOrderLinks(p);
 
     card.innerHTML = `
-      <div class="product-image">${imageHTML}</div>
+      <div class="product-image">${mainImgHTML}</div>
+      ${thumbsHTML}
       <div class="product-info">
         <h3>${escapeHTML(p.name)}</h3>
         <p class="price">${formatPrice(p.price)}</p>
-        ${descHTML}
-        ${orderRowHTML(links)}
+        <p class="product-desc">${escapeHTML(p.description || '')}</p>
+        <button class="btn btn-gold btn-block direct-btn" onclick="openOrderModal('${p.id}', '${escapeHTML(p.name)}', '${p.price}')">طلب مباشر من الموقع</button>
+        <div class="order-row">
+          <span class="order-label">تواصل عبر:</span>
+          <a class="icon-btn" href="${links.whatsapp}" target="_blank">${ICONS.whatsapp}</a>
+          <a class="icon-btn" href="${links.facebook}" target="_blank">${ICONS.facebook}</a>
+          <a class="icon-btn" href="${links.instagram}" target="_blank">${ICONS.instagram}</a>
+        </div>
       </div>
     `;
     grid.appendChild(card);
   });
 }
 
-function renderContactLinks() {
-  const el = document.getElementById('contact-links');
-  if (!el) return;
-  el.innerHTML = orderRowHTML(buildOrderLinks(null));
+window.changeProductImage = function(id, url, el) {
+  const imgEl = document.getElementById(`img-${id}`);
+  if (imgEl) imgEl.src = url;
+  const parent = el.parentElement;
+  parent.querySelectorAll('.thumb-img').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+};
+
+// ============================================================
+// Direct Order Modal
+// ============================================================
+window.openOrderModal = function(id, name, price) {
+  document.getElementById('ord-product-id').value = id;
+  document.getElementById('ord-product-name').value = name;
+  document.getElementById('ord-product-price').value = formatPrice(price);
+  document.getElementById('order-modal').hidden = false;
+};
+
+function initOrderModal() {
+  const modal = document.getElementById('order-modal');
+  const closeBtn = document.getElementById('close-modal');
+  if (closeBtn) closeBtn.onclick = () => modal.hidden = true;
+
+  const form = document.getElementById('direct-order-form');
+  if (form) {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const orderData = {
+        productName: document.getElementById('ord-product-name').value,
+        price: document.getElementById('ord-product-price').value,
+        clientName: document.getElementById('ord-client-name').value,
+        phone: document.getElementById('ord-client-phone').value,
+        city: document.getElementById('ord-client-city').value,
+        createdAt: new Date().toISOString()
+      };
+      await addDoc(collection(db, "orders"), orderData);
+      alert('تم استلام طلبك بنجاح! سنتواصل معك قريباً لتأكيد الشحن. ✨');
+      modal.hidden = true;
+      form.reset();
+    };
+  }
 }
 
 // ============================================================
-// 10. لوحة التحكم (dashboard.html)
+// Giveaway & Wheel Logic
+// ============================================================
+function initGiveaway() {
+  const form = document.getElementById('giveaway-form');
+  const wheel = document.getElementById('wheel');
+  const resText = document.getElementById('giveaway-result');
+
+  if (form && wheel) {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const deg = Math.floor(2000 + Math.random() * 2000);
+      wheel.style.transform = `rotate(${deg}deg)`;
+
+      setTimeout(async () => {
+        const prizes = ["حقيبة هدية فاخرة 🎉", "خصم 10% على أي طلب 🏷️", "حظ أفضل المرة القادمة ✨", "شحن مجاني لك 🚚", "خصم 20% 🌟"];
+        const won = prizes[Math.floor(Math.random() * prizes.length)];
+        resText.textContent = `مبارك! لقد فزت بـ: ${won}`;
+        resText.hidden = false;
+
+        await addDoc(collection(db, "giveaways"), {
+          name: document.getElementById('g-name').value,
+          phone: document.getElementById('g-phone').value,
+          prize: won,
+          createdAt: new Date().toISOString()
+        });
+      }, 4000);
+    };
+  }
+}
+
+// ============================================================
+// Reviews Logic
+// ============================================================
+function initReviews() {
+  const revForm = document.getElementById('review-form');
+  const revGrid = document.getElementById('reviews-grid');
+
+  if (revForm) {
+    revForm.onsubmit = async (e) => {
+      e.preventDefault();
+      await addDoc(collection(db, "reviews"), {
+        name: document.getElementById('rev-name').value,
+        rating: document.getElementById('rev-rating').value,
+        comment: document.getElementById('rev-comment').value,
+        createdAt: new Date().toISOString()
+      });
+      alert('شكراً لكِ على تقديم رأيكِ التجريبي! ✨');
+      revForm.reset();
+    };
+  }
+
+  if (revGrid) {
+    listenToReviews((reviews) => {
+      revGrid.innerHTML = reviews.map(r => `
+        <div class="review-card">
+          <div class="rev-stars">${'⭐'.repeat(Number(r.rating))}</div>
+          <p class="rev-comment">"${escapeHTML(r.comment)}"</p>
+          <span class="rev-author">— ${escapeHTML(r.name)}</span>
+        </div>
+      `).join('');
+    });
+  }
+}
+
+// ============================================================
+// Dashboard Initializer
 // ============================================================
 function initDashboard() {
   const loginGate = document.getElementById('login-gate');
   const dashboardMain = document.getElementById('dashboard-main');
   if (!loginGate || !dashboardMain) return;
 
-  const loginForm = document.getElementById('login-form');
-  const loginError = document.getElementById('login-error');
-  const emailInput = document.getElementById('login-email');
-  const passwordInput = document.getElementById('login-password');
-
-  function showDashboard() {
-    loginGate.hidden = true;
-    dashboardMain.hidden = false;
-    loadDashboardProducts();
-  }
-
-  function hideDashboard() {
-    loginGate.hidden = false;
-    dashboardMain.hidden = true;
-  }
-
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      showDashboard();
+      loginGate.hidden = true;
+      dashboardMain.hidden = false;
+      loadAdminDashboardData();
     } else {
-      hideDashboard();
+      loginGate.hidden = false;
+      dashboardMain.hidden = true;
     }
   });
 
-  loginForm.addEventListener('submit', async (e) => {
+  document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = emailInput.value;
-    const password = passwordInput.value;
-
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      loginError.hidden = true;
-    } catch (error) {
-      loginError.textContent = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
-      loginError.hidden = false;
-      console.error("خطأ في تسجيل الدخول:", error);
+      await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value);
+    } catch {
+      document.getElementById('login-error').hidden = false;
     }
   });
 
-  const form = document.getElementById('product-form');
-  const nameInput = document.getElementById('p-name');
-  const priceInput = document.getElementById('p-price');
-  const descInput = document.getElementById('p-desc');
-  const imageInput = document.getElementById('p-image');
-  const imagePreview = document.getElementById('image-preview');
-  const removeImageBtn = document.getElementById('remove-image-btn');
+  // Multiple image upload handling
+  let pendingImages = [];
+  const imgInput = document.getElementById('p-images');
+  const imgPreview = document.getElementById('image-preview');
 
-  let pendingImage = null;
+  if (imgInput) {
+    imgInput.addEventListener('change', (e) => {
+      pendingImages = Array.from(e.target.files);
+      imgPreview.innerHTML = pendingImages.map(f => `<span class="badge">${f.name}</span>`).join(' ');
+      document.getElementById('remove-image-btn').disabled = false;
+    });
 
-  imageInput.addEventListener('change', async () => {
-    const file = imageInput.files[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('الصورة كبيرة جداً — يفضّل أقل من 5 ميغابايت');
-      imageInput.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const compressed = await compressImage(e.target.result, 600, 600, 0.7);
-        pendingImage = compressed;
-        imagePreview.innerHTML = `<img src="${compressed}" alt="معاينة الصورة">`;
-        removeImageBtn.disabled = false;
-      } catch (error) {
-        console.error('خطأ في ضغط الصورة:', error);
-        pendingImage = e.target.result;
-        imagePreview.innerHTML = `<img src="${pendingImage}" alt="معاينة الصورة">`;
-        removeImageBtn.disabled = false;
-      }
+    document.getElementById('remove-image-btn').onclick = () => {
+      pendingImages = [];
+      imgInput.value = '';
+      imgPreview.innerHTML = `<span class="preview-placeholder">لم يتم تحديد صور بعد</span>`;
+      document.getElementById('remove-image-btn').disabled = true;
     };
-    reader.readAsDataURL(file);
-  });
+  }
 
-  removeImageBtn.addEventListener('click', () => {
-    pendingImage = null;
-    imageInput.value = '';
-    imagePreview.innerHTML = `<span class="preview-placeholder">لا توجد صورة</span>`;
-    removeImageBtn.disabled = true;
-  });
-
-  form.addEventListener('submit', async (e) => {
+  document.getElementById('product-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    const productData = {
-      name: nameInput.value.trim(),
-      price: Number(priceInput.value) || 0,
-      description: descInput.value.trim(),
-      image: null
-    };
-
-    if (!productData.name) {
-      alert('الرجاء إدخال اسم المنتج');
-      return;
-    }
-
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'جاري الإضافة...';
-    submitBtn.disabled = true;
-
-    try {
-      const result = await addProduct(productData);
-      
-      if (!result.success) {
-        alert('حدث خطأ في إضافة المنتج: ' + result.error);
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-        return;
-      }
-
-      const productId = result.id;
-
-      if (pendingImage) {
-        const uploadResult = await uploadImage(productId, pendingImage);
-        if (uploadResult.success) {
-          await updateProduct(productId, { image: uploadResult.url });
-        } else {
-          console.warn('تم إضافة المنتج لكن فشل رفع الصورة:', uploadResult.error);
-          alert('تم إضافة المنتج ولكن فشل رفع الصورة. يمكنك إعادة محاولة رفع الصورة لاحقاً.');
-        }
-      }
-
-      form.reset();
-      pendingImage = null;
-      imagePreview.innerHTML = `<span class="preview-placeholder">لا توجد صورة</span>`;
-      removeImageBtn.disabled = true;
-
-      alert('تم إضافة المنتج بنجاح! ✨');
-    } catch (error) {
-      console.error('خطأ:', error);
-      alert('حدث خطأ غير متوقع: ' + error.message);
-    } finally {
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-    }
-  });
-}
-
-// ============================================================
-// 11. تحميل المنتجات في لوحة التحكم
-// ============================================================
-let dashboardProducts = [];
-
-function loadDashboardProducts() {
-  const list = document.getElementById('dash-product-list');
-  const emptyState = document.getElementById('dash-empty-state');
-
-  listenToProducts((products) => {
-    dashboardProducts = products;
-    
-    list.innerHTML = '';
-
-    if (!products.length) {
-      if (emptyState) emptyState.hidden = false;
-      return;
-    }
-    if (emptyState) emptyState.hidden = true;
-
-    products.forEach(p => {
-      const row = document.createElement('div');
-      row.className = 'dash-product-item';
-      row.dataset.id = p.id;
-
-      const thumbHTML = p.image
-        ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
-        : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
-
-      row.innerHTML = `
-        <div class="dash-thumb">${thumbHTML}</div>
-        <div class="dash-item-fields">
-          <input type="text" data-field="name" value="${escapeAttr(p.name)}" aria-label="اسم المنتج">
-          <div class="field-inline">
-            <input type="number" data-field="price" value="${p.price}" min="0" aria-label="السعر">
-            <label class="btn btn-ghost btn-small" style="cursor:pointer;">
-              تغيير الصورة
-              <input type="file" accept="image/*" data-field="image-file" hidden>
-            </label>
-            <button type="button" class="btn btn-outline-danger btn-small" data-action="remove-image" ${p.image ? '' : 'disabled'}>إزالة الصورة</button>
-          </div>
-          <span class="save-flash" data-role="flash">تم الحفظ ✓</span>
-        </div>
-        <div class="dash-item-actions">
-          <button type="button" class="btn btn-outline-danger btn-small" data-action="delete">حذف المنتج</button>
-        </div>
-      `;
-      list.appendChild(row);
-    });
-
-    attachDashboardListeners(list);
-  });
-}
-
-function attachDashboardListeners(list) {
-  list.querySelectorAll('.dash-product-item').forEach(row => {
-    const id = row.dataset.id;
-    const flash = row.querySelector('[data-role="flash"]');
-
-    function flashSaved() {
-      if (!flash) return;
-      flash.classList.add('show');
-      clearTimeout(flash._t);
-      flash._t = setTimeout(() => flash.classList.remove('show'), 1200);
-    }
-
-    const nameInput = row.querySelector('[data-field="name"]');
-    nameInput.addEventListener('change', async () => {
-      const val = nameInput.value.trim();
-      if (!val) return;
-      await updateProduct(id, { name: val });
-      flashSaved();
-    });
-
-    const priceInput = row.querySelector('[data-field="price"]');
-    priceInput.addEventListener('change', async () => {
-      await updateProduct(id, { price: Number(priceInput.value) || 0 });
-      flashSaved();
-    });
-
-    const imageFileInput = row.querySelector('[data-field="image-file"]');
-    imageFileInput.addEventListener('change', async () => {
-      const file = imageFileInput.files[0];
-      if (!file) return;
-      
-      if (file.size > 5 * 1024 * 1024) {
-        alert('الصورة كبيرة جداً');
-        imageFileInput.value = '';
-        return;
-      }
-
+    const uploadedUrls = [];
+    for (let file of pendingImages) {
       const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const compressed = await compressImage(e.target.result, 600, 600, 0.7);
-          const result = await uploadImage(id, compressed);
-          if (result.success) {
-            await updateProduct(id, { image: result.url });
-            flashSaved();
-            loadDashboardProducts();
-          } else {
-            alert('فشل رفع الصورة: ' + result.error);
-          }
-        } catch (error) {
-          console.error('خطأ:', error);
-          alert('حدث خطأ في رفع الصورة');
-        }
-      };
-      reader.readAsDataURL(file);
+      const url = await new Promise((res) => {
+        reader.onload = (ev) => res(ev.target.result);
+        reader.readAsDataURL(file);
+      });
+      const up = await uploadImageToCloudinary(url);
+      if (up.success) uploadedUrls.push(up.url);
+    }
+
+    await addDoc(collection(db, "products"), {
+      name: document.getElementById('p-name').value,
+      price: Number(document.getElementById('p-price').value),
+      description: document.getElementById('p-desc').value,
+      images: uploadedUrls,
+      createdAt: new Date().toISOString()
     });
 
-    const removeBtn = row.querySelector('[data-action="remove-image"]');
-    removeBtn.addEventListener('click', async () => {
-      await deleteImage(id);
-      await updateProduct(id, { image: null });
-      flashSaved();
-      loadDashboardProducts();
-    });
-
-    const deleteBtn = row.querySelector('[data-action="delete"]');
-    deleteBtn.addEventListener('click', async () => {
-      if (!confirm('حذف هذا المنتج نهائياً؟')) return;
-      await deleteProduct(id);
-      await deleteImage(id);
-      loadDashboardProducts();
-    });
+    alert('تم إضافة المنتج بنجاح مع الصور الجديدة! ✨');
+    e.target.reset();
+    imgPreview.innerHTML = `<span class="preview-placeholder">لم يتم تحديد صور بعد</span>`;
   });
 }
 
-// ============================================================
-// 12. تشغيل كل شيء
-// ============================================================
+function loadAdminDashboardData() {
+  listenToProducts((products) => {
+    const list = document.getElementById('dash-product-list');
+    if (!list) return;
+    list.innerHTML = products.map(p => `
+      <div class="dash-product-item">
+        <div><strong>${escapeHTML(p.name)}</strong> — ${formatPrice(p.price)}</div>
+        <button class="btn btn-outline-danger btn-small" onclick="deleteProductDoc('${p.id}')">حذف</button>
+      </div>
+    `).join('');
+  });
+
+  listenToOrders((orders) => {
+    const oList = document.getElementById('orders-list');
+    if (!oList) return;
+    oList.innerHTML = orders.map(o => `
+      <div class="order-card-dash">
+        <p><strong>الزبون:</strong> ${escapeHTML(o.clientName)} | <strong>رقم الهاتف:</strong> ${escapeHTML(o.phone)}</p>
+        <p><strong>المنتج:</strong> ${escapeHTML(o.productName)} | <strong>العنوان:</strong> ${escapeHTML(o.city)}</p>
+      </div>
+    `).join('');
+  });
+}
+
+window.deleteProductDoc = async function(id) {
+  if (confirm('هل أنت متأكدة من حذف هذا المنتج؟')) {
+    await deleteDoc(doc(db, "products", id));
+  }
+};
+
+// Initialization
 document.addEventListener('DOMContentLoaded', () => {
-  initShared();
-  renderContactLinks();
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  initOrderModal();
+  initGiveaway();
+  initReviews();
   initDashboard();
 
-  const isDashboard = document.querySelector('.dashboard-body');
-  if (!isDashboard) {
-    listenToProducts((products) => {
-      renderStorefront(products);
-    });
+  if (!document.querySelector('.dashboard-body')) {
+    listenToProducts(renderStorefront);
   }
 });
