@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (الملف الكامل المصحح)
+   SAC DIAMANT — script.js (المفتاح مصحح)
    ===================================================================== */
 
 // ============================================================
@@ -43,11 +43,11 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // ============================================================
-// 3. إعدادات Cloudinary
+// 3. إعدادات Cloudinary (المفتاح مصحح)
 // ============================================================
 const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
 const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
-const CLOUDINARY_API_KEY = 'f74f2K2eVN6HRaHOEezQqu4OnoU';
+const CLOUDINARY_API_KEY = 'aqmgyMSmaIO2cQd1b3i9GjVnyEM'; // ✅ المفتاح الصحيح
 
 // ============================================================
 // 4. إعدادات التواصل
@@ -251,7 +251,7 @@ function initShared() {
 }
 
 // ============================================================
-// 9. المتجر (index.html) - نسخة مصححة
+// 9. المتجر (index.html) - عرض المنتجات
 // ============================================================
 function renderStorefront(products) {
   const grid = document.getElementById('product-grid');
@@ -404,9 +404,7 @@ function initDashboard() {
     removeImageBtn.disabled = true;
   });
 
-  // ============================================================
-  // نموذج إضافة المنتج (مصحح)
-  // ============================================================
+  // نموذج إضافة المنتج
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
