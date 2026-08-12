@@ -47,7 +47,7 @@ const auth = getAuth(app);
 // ============================================================
 const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
 const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
-const CLOUDINARY_API_KEY = 'aqmgyMSmaIO2cQd1b3i9GjVnyEM'; // ✅ المفتاح الصحيح
+const CLOUDINARY_API_KEY = 'aqmgyMSmaIO2cQd1b3i9GjVnyEM';
 
 // ============================================================
 // 4. إعدادات التواصل
