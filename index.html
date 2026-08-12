@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sac Diamant — متجر أنيق</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="facet-cursor" id="facetCursor" aria-hidden="true"></div>
+
+<header class="site-header">
+  <a href="#top" class="logo">
+    <span class="logo-facet" aria-hidden="true"></span>
+    <span class="logo-text">SAC <em>DIAMANT</em></span>
+  </a>
+  <nav class="main-nav">
+    <a href="#products">المجموعة</a>
+    <a href="#about">من نحن</a>
+    <a href="#contact">تواصل</a>
+  </nav>
+  <button class="menu-toggle" id="menuToggle" aria-label="فتح القائمة" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<main>
+  <section class="hero" id="top">
+    <div class="hero-facets" aria-hidden="true">
+      <span class="facet f1"></span>
+      <span class="facet f2"></span>
+      <span class="facet f3"></span>
+      <span class="facet f4"></span>
+      <span class="facet f5"></span>
+    </div>
+    <div class="hero-content">
+      <p class="eyebrow"><span class="diamond-bullet"></span> مجموعة مختارة بعناية</p>
+      <h1>بريقٌ<br>يليقُ باختيارك</h1>
+      <p class="hero-sub">قطع مختارة بعناية من خزانتي الخاصة — كل قطعة محدودة، وكل تفصيل مدروس.</p>
+      <div class="hero-actions">
+        <a href="#products" class="btn btn-gold">تصفّحي المجموعة</a>
+        <a href="#contact" class="btn btn-ghost">تواصلي معي</a>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true">
+      <span class="diamond-bullet small"></span>
+    </div>
+  </section>
+
+  <section class="products" id="products">
+    <div class="section-head">
+      <p class="eyebrow"><span class="diamond-bullet"></span> المتوفر الآن</p>
+      <h2>المجموعة</h2>
+      <p class="section-sub">قطع بكمية محدودة — ما ينفد لا يعود</p>
+    </div>
+
+    <div id="product-grid" class="product-grid"></div>
+
+    <div id="empty-state" class="empty-state" hidden>
+      <span class="diamond-icon-lg" aria-hidden="true"></span>
+      <p>لا توجد منتجات معروضة حالياً</p>
+      <span class="empty-sub">تابعينا قريباً لمجموعة جديدة</span>
+    </div>
+  </section>
+
+  <section class="about" id="about">
+    <div class="about-inner">
+      <span class="diamond-icon-lg" aria-hidden="true"></span>
+      <h2>عن سَاك ديامان</h2>
+      <p>متجر صغير بلمسة شخصية — قطع أختارها بنفسي، من حقائب وإكسسوارات، لأقدّم لكِ ما يستحق فعلاً أن يُقتنى. كل قطعة تُعرض هنا محدودة العدد، وتُباع لأول من يطلب.</p>
+    </div>
+  </section>
+
+  <section class="contact" id="contact">
+    <div class="contact-inner">
+      <p class="eyebrow"><span class="diamond-bullet"></span> جاهزة لطلبك</p>
+      <h2>تواصلي للطلب</h2>
+      <p class="section-sub">أسرع طريقة هي واتساب — اضغطي على "اطلب" تحت أي قطعة، أو راسليني مباشرة من هنا</p>
+      <div class="contact-links" id="contact-links"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <span class="diamond-bullet small" aria-hidden="true"></span>
+  <p>© <span id="year"></span> Sac Diamant — جميع الحقوق محفوظة</p>
+  <a href="dashboard.html" class="dash-link">لوحة التحكم</a>
+</footer>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>

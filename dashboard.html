@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم — Sac Diamant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+
+<header class="site-header dash-header">
+  <a href="index.html" class="logo">
+    <span class="logo-facet" aria-hidden="true"></span>
+    <span class="logo-text">SAC <em>DIAMANT</em></span>
+  </a>
+  <span class="dash-title">لوحة التحكم</span>
+  <a href="index.html" class="btn btn-ghost btn-small">عرض المتجر</a>
+</header>
+
+<!-- Login gate -->
+<section id="login-gate" class="login-gate">
+  <form id="login-form" class="login-card">
+    <span class="diamond-icon-lg" aria-hidden="true"></span>
+    <h2>دخول لوحة التحكم</h2>
+    <p class="login-note">هذه اللوحة خاصة بصاحبة المتجر فقط</p>
+    
+    <label for="login-email">البريد الإلكتروني</label>
+    <input type="email" id="login-email" placeholder="example@email.com" required autocomplete="email">
+    
+    <label for="login-password">كلمة المرور</label>
+    <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+    
+    <p id="login-error" class="login-error" hidden>البريد الإلكتروني أو كلمة المرور غير صحيحة</p>
+    <button type="submit" class="btn btn-gold btn-block">دخول</button>
+  </form>
+</section>
+
+<!-- Dashboard main (hidden until login) -->
+<main id="dashboard-main" class="dashboard-main" hidden>
+
+  <section class="dash-panel add-panel">
+    <div class="panel-head">
+      <span class="diamond-bullet"></span>
+      <h2>إضافة منتج جديد</h2>
+    </div>
+
+    <form id="product-form" class="product-form">
+      <div class="form-row">
+        <label for="p-name">اسم المنتج</label>
+        <input type="text" id="p-name" placeholder="مثال: حقيبة يد جلدية" required>
+      </div>
+
+      <div class="form-row">
+        <label for="p-price">السعر (د.ج)</label>
+        <input type="number" id="p-price" min="0" step="1" placeholder="مثال: 8500" required>
+      </div>
+
+      <div class="form-row">
+        <label for="p-desc">الوصف (اختياري)</label>
+        <textarea id="p-desc" rows="3" placeholder="تفاصيل قصيرة عن القطعة..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <label for="p-image">صورة المنتج</label>
+        <div class="image-upload">
+          <div class="image-preview" id="image-preview">
+            <span class="preview-placeholder">لا توجد صورة</span>
+          </div>
+          <div class="image-upload-actions">
+            <label for="p-image" class="btn btn-ghost btn-small file-label">اختيار صورة</label>
+            <input type="file" id="p-image" accept="image/*" hidden>
+            <button type="button" id="remove-image-btn" class="btn btn-outline-danger btn-small" disabled>إزالة الصورة</button>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-gold btn-block">إضافة المنتج</button>
+    </form>
+  </section>
+
+  <section class="dash-panel manage-panel">
+    <div class="panel-head">
+      <span class="diamond-bullet"></span>
+      <h2>المنتجات الحالية</h2>
+    </div>
+
+    <div id="dash-product-list" class="dash-product-list"></div>
+
+    <div id="dash-empty-state" class="empty-state" hidden>
+      <span class="diamond-icon-lg" aria-hidden="true"></span>
+      <p>لم تضيفي أي منتج بعد</p>
+      <span class="empty-sub">استخدمي النموذج أعلاه لإضافة أول قطعة</span>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <span class="diamond-bullet small" aria-hidden="true"></span>
+  <p>© <span id="year"></span> Sac Diamant — لوحة التحكم</p>
+</footer>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
