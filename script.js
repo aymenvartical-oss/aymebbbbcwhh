@@ -15,7 +15,8 @@ import {
   updateDoc,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
+  where
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import {
   getAuth,
@@ -160,7 +161,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور — Cloudinary
+// 7. دوال رفع الصور — Cloudinary (مصححة بالكامل)
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -462,7 +463,6 @@ function renderProductGrid(products) {
       imageUrl = p.images[0];
     }
     
-    // ✅ طباعة الرابط للتحقق
     console.log(`🖼️ [${p.name}] رابط الصورة:`, imageUrl);
 
     let imageHTML = '';
@@ -503,7 +503,7 @@ function renderStorefront(products) {
   storefrontProducts = products || [];
   console.log('📦 المنتجات المستلمة من Firebase:', storefrontProducts.length);
   storefrontProducts.forEach(p => {
-    console.log(`🖼️ ${p.name}: image =`, p.image, '| imageUrl =', p.imageUrl);
+    console.log(`🖼️ ${p.name}: image =`, p.image);
   });
   renderCategoryChips(storefrontProducts);
   applyStorefrontFilters();
@@ -749,7 +749,7 @@ function initDashboard() {
 }
 
 // ============================================================
-// 11.1 تحميل المنتجات في لوحة التحكم
+// 11.1 تحميل المنتجات في لوحة التحكم (مصححة)
 // ============================================================
 function loadDashboardProducts() {
   const list = document.getElementById('dash-product-list');
