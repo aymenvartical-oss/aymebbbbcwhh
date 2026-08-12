@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (نسخة مطوّرة مع جميع الميزات)
+   SAC DIAMANT — script.js (نسخة مطوّرة ومصححة)
    ===================================================================== */
 
 // ============================================================
@@ -17,7 +17,8 @@ import {
   query,
   orderBy,
   getDocs,
-  where
+  where,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import {
   getAuth,
@@ -104,7 +105,7 @@ function escapeAttr(str) {
 }
 
 // ============================================================
-// 6. دوال Firebase
+// 6. دوال Firebase - الاستماع
 // ============================================================
 function listenToProducts(callback) {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -128,6 +129,17 @@ function listenToReviews(callback) {
   });
 }
 
+function listenToOrders(callback) {
+  const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const orders = [];
+    snapshot.forEach((doc) => {
+      orders.push({ id: doc.id, ...doc.data() });
+    });
+    callback(orders);
+  });
+}
+
 function listenToContestants(callback) {
   const q = query(collection(db, "contestants"), orderBy("createdAt", "desc"));
   return onSnapshot(q, (snapshot) => {
@@ -139,6 +151,20 @@ function listenToContestants(callback) {
   });
 }
 
+function listenToContest(callback) {
+  const q = query(collection(db, "contest"), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    let contest = null;
+    snapshot.forEach((doc) => {
+      contest = { id: doc.id, ...doc.data() };
+    });
+    callback(contest);
+  });
+}
+
+// ============================================================
+// 7. دوال Firebase - الكتابة
+// ============================================================
 async function addProduct(productData) {
   try {
     const docRef = await addDoc(collection(db, "products"), {
@@ -212,8 +238,33 @@ async function addOrder(orderData) {
   }
 }
 
+async function saveContest(contestData) {
+  try {
+    // حفظ المسابقة في مجموعة منفصلة
+    const docRef = doc(db, "contest", "current");
+    await setDoc(docRef, {
+      ...contestData,
+      updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("خطأ في حفظ المسابقة:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function deleteContestant(contestantId) {
+  try {
+    await deleteDoc(doc(db, "contestants", contestantId));
+    return { success: true };
+  } catch (error) {
+    console.error("خطأ في حذف المشترك:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 // ============================================================
-// 7. دوال رفع الصور - Cloudinary (متعددة الصور)
+// 8. دوال رفع الصور - Cloudinary
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -259,6 +310,8 @@ async function uploadImagesToCloudinary(imagesDataUrls) {
       const data = await response.json();
       if (data.secure_url) {
         uploadedUrls.push(data.secure_url);
+      } else {
+        console.warn('فشل رفع صورة:', data);
       }
     } catch (error) {
       console.error('خطأ في رفع صورة:', error);
@@ -267,17 +320,8 @@ async function uploadImagesToCloudinary(imagesDataUrls) {
   return uploadedUrls;
 }
 
-async function uploadImage(productId, imageDataUrl) {
-  const result = await uploadImagesToCloudinary([imageDataUrl]);
-  return result.length > 0 ? { success: true, url: result[0] } : { success: false, error: 'فشل رفع الصورة' };
-}
-
-async function deleteImage(productId) {
-  return { success: true };
-}
-
 // ============================================================
-// 8. عناصر مشتركة
+// 9. عناصر مشتركة
 // ============================================================
 function initShared() {
   const yearEl = document.getElementById('year');
@@ -300,7 +344,7 @@ function initShared() {
 }
 
 // ============================================================
-// 9. المتجر (index.html)
+// 10. المتجر - عرض المنتجات (مصحح)
 // ============================================================
 function renderStorefront(products) {
   const grid = document.getElementById('product-grid');
@@ -318,15 +362,15 @@ function renderStorefront(products) {
     const card = document.createElement('article');
     card.className = 'product-card';
 
-    // عرض الصور - الصورة الأولى كرئيسية
+    // عرض الصور - معرض
     let imagesHTML = '';
     if (p.images && p.images.length > 0) {
       imagesHTML = `
         <div class="product-gallery">
-          <img src="${p.images[0]}" alt="${escapeHTML(p.name)}" class="gallery-main" loading="lazy">
+          <img src="${p.images[0]}" alt="${escapeHTML(p.name)}" class="gallery-main" loading="lazy" onerror="this.style.display='none'">
           ${p.images.length > 1 ? `
             <div class="gallery-thumbs">
-              ${p.images.map(img => `<img src="${img}" alt="${escapeHTML(p.name)}" loading="lazy">`).join('')}
+              ${p.images.slice(0, 3).map(img => `<img src="${img}" alt="${escapeHTML(p.name)}" loading="lazy" onerror="this.style.display='none'" onclick="this.parentElement.parentElement.querySelector('.gallery-main').src=this.src">`).join('')}
             </div>
           ` : ''}
         </div>
@@ -336,512 +380,4 @@ function renderStorefront(products) {
     }
 
     const descHTML = p.shortDescription
-      ? `<p class="product-desc">${escapeHTML(p.shortDescription)}</p>`
-      : '';
-
-    const starsHTML = p.averageRating
-      ? `<div class="product-rating">⭐ ${p.averageRating.toFixed(1)}</div>`
-      : '';
-
-    const links = buildOrderLinks(p);
-
-    card.innerHTML = `
-      <div class="product-image">${imagesHTML}</div>
-      <div class="product-info">
-        <h3>${escapeHTML(p.name)}</h3>
-        <p class="price">${formatPrice(p.price)}</p>
-        ${starsHTML}
-        ${descHTML}
-        <div class="product-actions">
-          ${orderRowHTML(links)}
-          <button class="btn btn-gold btn-small quick-order-btn" data-product="${escapeHTML(p.name)}">اطلب الآن</button>
-        </div>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
-
-  // تفعيل أزرار الطلب السريع
-  document.querySelectorAll('.quick-order-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const productName = btn.dataset.product;
-      const orderInput = document.getElementById('order-product');
-      if (orderInput) {
-        orderInput.value = productName;
-        document.getElementById('contact').scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  });
-}
-
-function renderContactLinks() {
-  const el = document.getElementById('contact-links');
-  if (!el) return;
-  el.innerHTML = orderRowHTML(buildOrderLinks(null));
-}
-
-// ============================================================
-// 10. التقييمات
-// ============================================================
-function renderReviews(reviews) {
-  const list = document.getElementById('reviews-list');
-  if (!list) return;
-
-  list.innerHTML = '';
-  if (!reviews || !reviews.length) {
-    list.innerHTML = '<p class="no-reviews">لا توجد تقييمات بعد — كوني أول من يقيّم! 🌟</p>';
-    return;
-  }
-
-  reviews.forEach(r => {
-    const item = document.createElement('div');
-    item.className = 'review-item';
-    const stars = '⭐'.repeat(r.stars) + '☆'.repeat(5 - r.stars);
-    item.innerHTML = `
-      <div class="review-header">
-        <strong>${escapeHTML(r.name)}</strong>
-        <span class="review-stars">${stars}</span>
-      </div>
-      <p>${escapeHTML(r.text)}</p>
-      <small>${new Date(r.createdAt).toLocaleDateString('ar-EG')}</small>
-    `;
-    list.appendChild(item);
-  });
-}
-
-function initReviewForm() {
-  const form = document.getElementById('review-form');
-  if (!form) return;
-
-  // نظام النجوم
-  const starsContainer = document.getElementById('stars-input');
-  const starsInput = document.getElementById('review-stars');
-  if (starsContainer) {
-    starsContainer.querySelectorAll('[data-star]').forEach(el => {
-      el.addEventListener('click', () => {
-        const val = parseInt(el.dataset.star);
-        starsInput.value = val;
-        starsContainer.querySelectorAll('[data-star]').forEach(s => {
-          s.style.opacity = parseInt(s.dataset.star) <= val ? '1' : '0.3';
-        });
-      });
-    });
-  }
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('review-name').value.trim();
-    const text = document.getElementById('review-text').value.trim();
-    const stars = parseInt(starsInput.value) || 5;
-
-    if (!name || !text) {
-      alert('الرجاء إدخال الاسم والتقييم');
-      return;
-    }
-
-    const result = await addReview({ name, text, stars });
-    if (result.success) {
-      form.reset();
-      alert('شكراً لكِ على تقييمك! 🌟');
-    } else {
-      alert('حدث خطأ في نشر التقييم: ' + result.error);
-    }
-  });
-}
-
-// ============================================================
-// 11. المسابقات
-// ============================================================
-function initContestForm() {
-  const form = document.getElementById('contest-form');
-  if (!form) return;
-
-  // عرض الفائزة السابقة
-  const winnerEl = document.getElementById('contest-winner');
-  const winnerNameEl = document.getElementById('winner-name');
-  // يمكن تحميل اسم الفائزة من Firebase لاحقاً
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('contest-name').value.trim();
-    const email = document.getElementById('contest-email').value.trim();
-    const phone = document.getElementById('contest-phone').value.trim();
-    const answer = document.getElementById('contest-answer').value.trim();
-
-    if (!name || !email || !answer) {
-      alert('الرجاء ملء جميع الحقول المطلوبة');
-      return;
-    }
-
-    const result = await addContestant({ name, email, phone, answer });
-    if (result.success) {
-      form.reset();
-      alert('🎉 تم الاشتراك في المسابقة! حظاً موفقاً!');
-    } else {
-      alert('حدث خطأ: ' + result.error);
-    }
-  });
-}
-
-// ============================================================
-// 12. الطلب السريع
-// ============================================================
-function initQuickOrderForm() {
-  const form = document.getElementById('quick-order-form');
-  if (!form) return;
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('order-name').value.trim();
-    const product = document.getElementById('order-product').value.trim();
-    const note = document.getElementById('order-note').value.trim();
-
-    if (!name || !product) {
-      alert('الرجاء إدخال اسمك والمنتج المطلوب');
-      return;
-    }
-
-    const result = await addOrder({ name, product, note });
-    if (result.success) {
-      form.reset();
-      alert('📩 تم استلام طلبك! سأتواصل معك قريباً 💕');
-    } else {
-      alert('حدث خطأ: ' + result.error);
-    }
-  });
-}
-
-// ============================================================
-// 13. لوحة التحكم
-// ============================================================
-function initDashboard() {
-  const loginGate = document.getElementById('login-gate');
-  const dashboardMain = document.getElementById('dashboard-main');
-  if (!loginGate || !dashboardMain) return;
-
-  const loginForm = document.getElementById('login-form');
-  const loginError = document.getElementById('login-error');
-  const emailInput = document.getElementById('login-email');
-  const passwordInput = document.getElementById('login-password');
-
-  function showDashboard() {
-    loginGate.hidden = true;
-    dashboardMain.hidden = false;
-    loadDashboardProducts();
-    loadDashboardReviews();
-    loadDashboardContestants();
-  }
-
-  function hideDashboard() {
-    loginGate.hidden = false;
-    dashboardMain.hidden = true;
-  }
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) showDashboard();
-    else hideDashboard();
-  });
-
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-      loginError.hidden = true;
-    } catch (error) {
-      loginError.hidden = false;
-      console.error("خطأ في تسجيل الدخول:", error);
-    }
-  });
-
-  // تسجيل خروج
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      signOut(auth);
-    });
-  }
-
-  // نموذج إضافة منتج
-  const form = document.getElementById('product-form');
-  const nameInput = document.getElementById('p-name');
-  const priceInput = document.getElementById('p-price');
-  const shortDescInput = document.getElementById('p-short-desc');
-  const descInput = document.getElementById('p-desc');
-  const imagesInput = document.getElementById('p-images');
-  const imagesPreview = document.getElementById('images-preview');
-  const removeImagesBtn = document.getElementById('remove-images-btn');
-
-  let pendingImages = [];
-
-  imagesInput.addEventListener('change', async () => {
-    const files = Array.from(imagesInput.files);
-    if (files.length > 3) {
-      alert('يمكنك اختيار 3 صور كحد أقصى');
-      imagesInput.value = '';
-      return;
-    }
-
-    pendingImages = [];
-    imagesPreview.innerHTML = '';
-
-    for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('الصورة كبيرة جداً');
-        continue;
-      }
-      const reader = new FileReader();
-      const dataUrl = await new Promise((resolve) => {
-        reader.onload = (e) => resolve(e.target.result);
-        reader.readAsDataURL(file);
-      });
-      pendingImages.push(dataUrl);
-      const img = document.createElement('img');
-      img.src = dataUrl;
-      img.alt = 'معاينة الصورة';
-      imagesPreview.appendChild(img);
-    }
-    removeImagesBtn.disabled = pendingImages.length === 0;
-  });
-
-  removeImagesBtn.addEventListener('click', () => {
-    pendingImages = [];
-    imagesInput.value = '';
-    imagesPreview.innerHTML = `<span class="preview-placeholder">لا توجد صور</span>`;
-    removeImagesBtn.disabled = true;
-  });
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const productData = {
-      name: nameInput.value.trim(),
-      price: Number(priceInput.value) || 0,
-      shortDescription: shortDescInput.value.trim(),
-      description: descInput.value.trim(),
-      images: []
-    };
-
-    if (!productData.name) {
-      alert('الرجاء إدخال اسم المنتج');
-      return;
-    }
-
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'جاري الإضافة...';
-    submitBtn.disabled = true;
-
-    try {
-      // 1. رفع الصور إلى Cloudinary
-      let uploadedUrls = [];
-      if (pendingImages.length > 0) {
-        uploadedUrls = await uploadImagesToCloudinary(pendingImages);
-      }
-      productData.images = uploadedUrls;
-
-      // 2. إضافة المنتج إلى Firestore
-      const result = await addProduct(productData);
-      if (!result.success) {
-        alert('حدث خطأ في إضافة المنتج: ' + result.error);
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-        return;
-      }
-
-      form.reset();
-      pendingImages = [];
-      imagesPreview.innerHTML = `<span class="preview-placeholder">لا توجد صور</span>`;
-      removeImagesBtn.disabled = true;
-      alert('تم إضافة المنتج بنجاح! ✨');
-    } catch (error) {
-      console.error('خطأ:', error);
-      alert('حدث خطأ غير متوقع: ' + error.message);
-    } finally {
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-    }
-  });
-}
-
-// ============================================================
-// 14. لوحة التحكم - عرض المنتجات
-// ============================================================
-function loadDashboardProducts() {
-  const list = document.getElementById('dash-product-list');
-  const emptyState = document.getElementById('dash-empty-state');
-
-  listenToProducts((products) => {
-    list.innerHTML = '';
-    if (!products.length) {
-      if (emptyState) emptyState.hidden = false;
-      return;
-    }
-    if (emptyState) emptyState.hidden = true;
-
-    products.forEach(p => {
-      const row = document.createElement('div');
-      row.className = 'dash-product-item';
-      row.dataset.id = p.id;
-
-      const thumbHTML = p.images && p.images.length > 0
-        ? `<img src="${p.images[0]}" alt="${escapeHTML(p.name)}">`
-        : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
-
-      row.innerHTML = `
-        <div class="dash-thumb">${thumbHTML}</div>
-        <div class="dash-item-fields">
-          <input type="text" data-field="name" value="${escapeAttr(p.name)}" aria-label="اسم المنتج">
-          <input type="text" data-field="shortDescription" value="${escapeAttr(p.shortDescription || '')}" aria-label="وصف قصير" placeholder="وصف قصير">
-          <div class="field-inline">
-            <input type="number" data-field="price" value="${p.price}" min="0" aria-label="السعر">
-          </div>
-          <span class="save-flash" data-role="flash">تم الحفظ ✓</span>
-        </div>
-        <div class="dash-item-actions">
-          <button type="button" class="btn btn-outline-danger btn-small" data-action="delete">حذف</button>
-        </div>
-      `;
-      list.appendChild(row);
-    });
-
-    attachDashboardListeners(list);
-  });
-}
-
-function attachDashboardListeners(list) {
-  list.querySelectorAll('.dash-product-item').forEach(row => {
-    const id = row.dataset.id;
-    const flash = row.querySelector('[data-role="flash"]');
-
-    function flashSaved() {
-      if (!flash) return;
-      flash.classList.add('show');
-      clearTimeout(flash._t);
-      flash._t = setTimeout(() => flash.classList.remove('show'), 1200);
-    }
-
-    const nameInput = row.querySelector('[data-field="name"]');
-    nameInput.addEventListener('change', async () => {
-      const val = nameInput.value.trim();
-      if (!val) return;
-      await updateProduct(id, { name: val });
-      flashSaved();
-    });
-
-    const shortDescInput = row.querySelector('[data-field="shortDescription"]');
-    shortDescInput.addEventListener('change', async () => {
-      await updateProduct(id, { shortDescription: shortDescInput.value.trim() });
-      flashSaved();
-    });
-
-    const priceInput = row.querySelector('[data-field="price"]');
-    priceInput.addEventListener('change', async () => {
-      await updateProduct(id, { price: Number(priceInput.value) || 0 });
-      flashSaved();
-    });
-
-    row.querySelector('[data-action="delete"]').addEventListener('click', async () => {
-      if (!confirm('حذف هذا المنتج نهائياً؟')) return;
-      await deleteProduct(id);
-    });
-  });
-}
-
-// ============================================================
-// 15. لوحة التحكم - عرض التقييمات
-// ============================================================
-function loadDashboardReviews() {
-  const list = document.getElementById('dash-reviews-list');
-  const emptyState = document.getElementById('dash-reviews-empty');
-  if (!list) return;
-
-  listenToReviews((reviews) => {
-    list.innerHTML = '';
-    if (!reviews.length) {
-      if (emptyState) emptyState.hidden = false;
-      return;
-    }
-    if (emptyState) emptyState.hidden = true;
-
-    reviews.forEach(r => {
-      const item = document.createElement('div');
-      item.className = 'dash-review-item';
-      const stars = '⭐'.repeat(r.stars) + '☆'.repeat(5 - r.stars);
-      item.innerHTML = `
-        <strong>${escapeHTML(r.name)}</strong>
-        <span>${stars}</span>
-        <p>${escapeHTML(r.text)}</p>
-        <small>${new Date(r.createdAt).toLocaleDateString('ar-EG')}</small>
-      `;
-      list.appendChild(item);
-    });
-  });
-}
-
-// ============================================================
-// 16. لوحة التحكم - عرض مشتركي المسابقة
-// ============================================================
-function loadDashboardContestants() {
-  const list = document.getElementById('dash-contestants-list');
-  const emptyState = document.getElementById('dash-contestants-empty');
-  const pickBtn = document.getElementById('pick-winner-btn');
-  if (!list) return;
-
-  listenToContestants((contestants) => {
-    list.innerHTML = '';
-    if (!contestants.length) {
-      if (emptyState) emptyState.hidden = false;
-      if (pickBtn) pickBtn.hidden = true;
-      return;
-    }
-    if (emptyState) emptyState.hidden = true;
-    if (pickBtn) pickBtn.hidden = false;
-
-    contestants.forEach(c => {
-      const item = document.createElement('div');
-      item.className = 'dash-contestant-item';
-      item.innerHTML = `
-        <strong>${escapeHTML(c.name)}</strong>
-        <span>${escapeHTML(c.email)}</span>
-        <p>${escapeHTML(c.answer)}</p>
-        <small>${new Date(c.createdAt).toLocaleDateString('ar-EG')}</small>
-      `;
-      list.appendChild(item);
-    });
-
-    // زر اختيار فائز عشوائي
-    if (pickBtn) {
-      pickBtn.onclick = () => {
-        if (contestants.length === 0) return;
-        const winner = contestants[Math.floor(Math.random() * contestants.length)];
-        document.getElementById('winner-name').textContent = winner.name;
-        document.getElementById('contest-winner').hidden = false;
-        alert(`🎉 الفائزة هي: ${winner.name}! تهانينا! 🎉`);
-        // يمكن حفظ الفائزة في قاعدة البيانات
-      };
-    }
-  });
-}
-
-// ============================================================
-// 17. تشغيل كل شيء
-// ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-  initShared();
-  renderContactLinks();
-  initReviewForm();
-  initContestForm();
-  initQuickOrderForm();
-  initDashboard();
-
-  const isDashboard = document.querySelector('.dashboard-body');
-  if (!isDashboard) {
-    // صفحة المتجر
-    listenToProducts((products) => {
-      renderStorefront(products);
-    });
-    listenToReviews((reviews) => {
-      renderReviews(reviews);
-    });
-  }
-});
+      ? `<p class="product-desc">${escapeHTML(p.shortDescription
