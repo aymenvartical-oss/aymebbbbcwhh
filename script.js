@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (مع Firebase + Cloudinary)
+   SAC DIAMANT — script.js (الملف الكامل المصحح)
    ===================================================================== */
 
 // ============================================================
@@ -149,7 +149,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور - باستخدام Cloudinary
+// 7. دوال رفع الصور - باستخدام Cloudinary (مصححة)
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -200,19 +200,20 @@ async function uploadImageToCloudinary(imageDataUrl) {
     const data = await response.json();
     
     if (data.secure_url) {
+      console.log('✅ تم رفع الصورة بنجاح:', data.secure_url);
       return { 
         success: true, 
         url: data.secure_url
       };
     } else {
-      console.error('خطأ Cloudinary:', data);
+      console.error('❌ خطأ Cloudinary:', data);
       return { 
         success: false, 
         error: data.error?.message || 'فشل رفع الصورة'
       };
     }
   } catch (error) {
-    console.error("خطأ في رفع الصورة:", error);
+    console.error("❌ خطأ في رفع الصورة:", error);
     return { success: false, error: error.message };
   }
 }
@@ -222,7 +223,7 @@ async function uploadImage(productId, imageDataUrl) {
 }
 
 async function deleteImage(productId) {
-  console.log('تم تجاهل حذف الصورة (Cloudinary يتطلب API Secret للحذف)');
+  console.log('تم تجاهل حذف الصورة');
   return { success: true };
 }
 
@@ -250,7 +251,7 @@ function initShared() {
 }
 
 // ============================================================
-// 9. المتجر (index.html)
+// 9. المتجر (index.html) - نسخة مصححة
 // ============================================================
 function renderStorefront(products) {
   const grid = document.getElementById('product-grid');
@@ -270,9 +271,22 @@ function renderStorefront(products) {
     const card = document.createElement('article');
     card.className = 'product-card';
 
-    const imageHTML = p.image
-      ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
-      : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
+    let imageUrl = null;
+    
+    if (p.image) {
+      imageUrl = p.image;
+    } else if (p.images && p.images.length > 0) {
+      imageUrl = p.images[0];
+    } else if (p.imageUrl) {
+      imageUrl = p.imageUrl;
+    }
+    
+    let imageHTML = '';
+    if (imageUrl && imageUrl.startsWith('http')) {
+      imageHTML = `<img src="${imageUrl}" alt="${escapeHTML(p.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\'diamond-icon-lg\' aria-hidden=\'true\'></span>'">`;
+    } else {
+      imageHTML = `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
+    }
 
     const descHTML = p.description
       ? `<p class="product-desc">${escapeHTML(p.description)}</p>`
@@ -390,6 +404,9 @@ function initDashboard() {
     removeImageBtn.disabled = true;
   });
 
+  // ============================================================
+  // نموذج إضافة المنتج (مصحح)
+  // ============================================================
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -411,6 +428,19 @@ function initDashboard() {
     submitBtn.disabled = true;
 
     try {
+      let imageUrl = null;
+      if (pendingImage) {
+        const uploadResult = await uploadImage(null, pendingImage);
+        if (uploadResult.success) {
+          imageUrl = uploadResult.url;
+          console.log('✅ تم رفع الصورة:', imageUrl);
+        } else {
+          console.warn('⚠️ فشل رفع الصورة:', uploadResult.error);
+        }
+      }
+
+      productData.image = imageUrl;
+      
       const result = await addProduct(productData);
       
       if (!result.success) {
@@ -420,26 +450,14 @@ function initDashboard() {
         return;
       }
 
-      const productId = result.id;
-
-      if (pendingImage) {
-        const uploadResult = await uploadImage(productId, pendingImage);
-        if (uploadResult.success) {
-          await updateProduct(productId, { image: uploadResult.url });
-        } else {
-          console.warn('تم إضافة المنتج لكن فشل رفع الصورة:', uploadResult.error);
-          alert('تم إضافة المنتج ولكن فشل رفع الصورة. يمكنك إعادة محاولة رفع الصورة لاحقاً.');
-        }
-      }
-
       form.reset();
       pendingImage = null;
       imagePreview.innerHTML = `<span class="preview-placeholder">لا توجد صورة</span>`;
       removeImageBtn.disabled = true;
 
-      alert('تم إضافة المنتج بنجاح! ✨');
+      alert('✅ تم إضافة المنتج بنجاح! ✨');
     } catch (error) {
-      console.error('خطأ:', error);
+      console.error('❌ خطأ:', error);
       alert('حدث خطأ غير متوقع: ' + error.message);
     } finally {
       submitBtn.textContent = originalText;
@@ -473,8 +491,12 @@ function loadDashboardProducts() {
       row.className = 'dash-product-item';
       row.dataset.id = p.id;
 
-      const thumbHTML = p.image
-        ? `<img src="${p.image}" alt="${escapeHTML(p.name)}">`
+      let thumbUrl = null;
+      if (p.image) thumbUrl = p.image;
+      else if (p.images && p.images.length > 0) thumbUrl = p.images[0];
+
+      const thumbHTML = thumbUrl
+        ? `<img src="${thumbUrl}" alt="${escapeHTML(p.name)}" onerror="this.style.display='none'">`
         : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
       row.innerHTML = `
@@ -487,7 +509,7 @@ function loadDashboardProducts() {
               تغيير الصورة
               <input type="file" accept="image/*" data-field="image-file" hidden>
             </label>
-            <button type="button" class="btn btn-outline-danger btn-small" data-action="remove-image" ${p.image ? '' : 'disabled'}>إزالة الصورة</button>
+            <button type="button" class="btn btn-outline-danger btn-small" data-action="remove-image" ${thumbUrl ? '' : 'disabled'}>إزالة الصورة</button>
           </div>
           <span class="save-flash" data-role="flash">تم الحفظ ✓</span>
         </div>
