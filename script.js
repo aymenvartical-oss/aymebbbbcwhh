@@ -41,7 +41,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // ============================================================
-// 3. إعدادات Cloudinary (بدون مفتاح API - Unsigned)
+// 3. إعدادات Cloudinary
 // ============================================================
 const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
 const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
@@ -160,7 +160,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور — Cloudinary (محسنة)
+// 7. دوال رفع الصور — Cloudinary
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -433,7 +433,7 @@ function applyStorefrontFilters() {
 }
 
 // ============================================================
-// 10.1 عرض المنتجات (المصحح)
+// 10.1 عرض المنتجات (المصحح النهائي)
 // ============================================================
 function renderProductGrid(products) {
   const grid = document.getElementById('product-grid');
@@ -454,20 +454,20 @@ function renderProductGrid(products) {
 
     // ✅ فحص جميع الاحتمالات للحصول على رابط الصورة
     let imageUrl = null;
-    if (p.image && p.image.startsWith('http')) {
+    if (p.image && typeof p.image === 'string' && p.image.startsWith('http')) {
       imageUrl = p.image;
-    } else if (p.images && p.images.length > 0 && p.images[0].startsWith('http')) {
-      imageUrl = p.images[0];
-    } else if (p.imageUrl && p.imageUrl.startsWith('http')) {
+    } else if (p.imageUrl && typeof p.imageUrl === 'string' && p.imageUrl.startsWith('http')) {
       imageUrl = p.imageUrl;
+    } else if (p.images && Array.isArray(p.images) && p.images.length > 0 && p.images[0]?.startsWith('http')) {
+      imageUrl = p.images[0];
     }
     
     // ✅ طباعة الرابط للتحقق
-    console.log(`🖼️ منتج: ${p.name}, رابط الصورة:`, imageUrl);
+    console.log(`🖼️ [${p.name}] رابط الصورة:`, imageUrl);
 
     let imageHTML = '';
     if (imageUrl) {
-      imageHTML = `<img src="${imageUrl}" alt="${escapeAttr(p.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\'diamond-icon-lg\' aria-hidden=\'true\'></span>'">`;
+      imageHTML = `<img src="${imageUrl}" alt="${escapeAttr(p.name)}" loading="lazy" onerror="console.error('❌ فشل تحميل الصورة:', this.src); this.style.display='none';this.parentElement.innerHTML='<span class=\\'diamond-icon-lg\\' aria-hidden=\\'true\\'></span>'">`;
     } else {
       imageHTML = `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
     }
@@ -501,9 +501,9 @@ function renderProductGrid(products) {
 
 function renderStorefront(products) {
   storefrontProducts = products || [];
-  console.log('📦 المنتجات المستلمة من Firebase:', storefrontProducts);
+  console.log('📦 المنتجات المستلمة من Firebase:', storefrontProducts.length);
   storefrontProducts.forEach(p => {
-    console.log(`🖼️ ${p.name}: image =`, p.image);
+    console.log(`🖼️ ${p.name}: image =`, p.image, '| imageUrl =', p.imageUrl);
   });
   renderCategoryChips(storefrontProducts);
   applyStorefrontFilters();
@@ -679,7 +679,7 @@ function initDashboard() {
   });
 
   // ============================================================
-  // نموذج إضافة المنتج (مصحح بالكامل)
+  // نموذج إضافة المنتج (المصحح النهائي)
   // ============================================================
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -771,8 +771,13 @@ function loadDashboardProducts() {
       row.dataset.id = p.id;
 
       let thumbUrl = null;
-      if (p.image) thumbUrl = p.image;
-      else if (p.images && p.images.length > 0) thumbUrl = p.images[0];
+      if (p.image && typeof p.image === 'string' && p.image.startsWith('http')) {
+        thumbUrl = p.image;
+      } else if (p.imageUrl && typeof p.imageUrl === 'string' && p.imageUrl.startsWith('http')) {
+        thumbUrl = p.imageUrl;
+      } else if (p.images && Array.isArray(p.images) && p.images.length > 0 && p.images[0]?.startsWith('http')) {
+        thumbUrl = p.images[0];
+      }
 
       const thumbHTML = thumbUrl
         ? `<img src="${thumbUrl}" alt="${escapeAttr(p.name)}" onerror="this.style.display='none'">`
