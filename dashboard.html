@@ -17,10 +17,7 @@
     <span class="logo-text">SAC <em>DIAMANT</em></span>
   </a>
   <span class="dash-title">لوحة التحكم</span>
-  <div class="dash-actions">
-    <a href="index.html" class="btn btn-ghost btn-small">عرض المتجر</a>
-    <button id="logout-btn" class="btn btn-outline-danger btn-small">تسجيل خروج</button>
-  </div>
+  <a href="index.html" class="btn btn-ghost btn-small">عرض المتجر</a>
 </header>
 
 <!-- Login gate -->
@@ -29,127 +26,73 @@
     <span class="diamond-icon-lg" aria-hidden="true"></span>
     <h2>دخول لوحة التحكم</h2>
     <p class="login-note">هذه اللوحة خاصة بصاحبة المتجر فقط</p>
+    
     <label for="login-email">البريد الإلكتروني</label>
-    <input type="email" id="login-email" placeholder="example@email.com" required>
+    <input type="email" id="login-email" placeholder="example@email.com" required autocomplete="email">
+    
     <label for="login-password">كلمة المرور</label>
-    <input type="password" id="login-password" placeholder="••••••••" required>
+    <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+    
     <p id="login-error" class="login-error" hidden>البريد الإلكتروني أو كلمة المرور غير صحيحة</p>
     <button type="submit" class="btn btn-gold btn-block">دخول</button>
   </form>
 </section>
 
-<!-- Dashboard main -->
+<!-- Dashboard main (hidden until login) -->
 <main id="dashboard-main" class="dashboard-main" hidden>
 
-  <!-- ===== إضافة منتج ===== -->
   <section class="dash-panel add-panel">
     <div class="panel-head">
       <span class="diamond-bullet"></span>
-      <h2>➕ إضافة منتج جديد</h2>
+      <h2>إضافة منتج جديد</h2>
     </div>
+
     <form id="product-form" class="product-form">
       <div class="form-row">
         <label for="p-name">اسم المنتج</label>
         <input type="text" id="p-name" placeholder="مثال: حقيبة يد جلدية" required>
       </div>
+
       <div class="form-row">
         <label for="p-price">السعر (د.ج)</label>
         <input type="number" id="p-price" min="0" step="1" placeholder="مثال: 8500" required>
       </div>
+
       <div class="form-row">
-        <label for="p-short-desc">وصف قصير (يظهر في البطاقة)</label>
-        <input type="text" id="p-short-desc" placeholder="وصف مختصر للقطعة...">
+        <label for="p-desc">الوصف (اختياري)</label>
+        <textarea id="p-desc" rows="3" placeholder="تفاصيل قصيرة عن القطعة..."></textarea>
       </div>
+
       <div class="form-row">
-        <label for="p-desc">وصف تفصيلي</label>
-        <textarea id="p-desc" rows="4" placeholder="تفاصيل كاملة عن القطعة..."></textarea>
-      </div>
-      <div class="form-row">
-        <label>صور المنتج (اختر 3 صور كحد أقصى)</label>
-        <div class="images-upload">
-          <div class="images-preview" id="images-preview">
-            <span class="preview-placeholder">📷 اختر صوراً من الجهاز</span>
+        <label for="p-image">صورة المنتج</label>
+        <div class="image-upload">
+          <div class="image-preview" id="image-preview">
+            <span class="preview-placeholder">لا توجد صورة</span>
           </div>
-          <div class="images-upload-actions">
-            <label class="btn btn-ghost btn-small file-label">📁 اختيار صور
-              <input type="file" id="p-images" accept="image/*" multiple hidden>
-            </label>
-            <button type="button" id="remove-images-btn" class="btn btn-outline-danger btn-small" disabled>🗑️ إزالة الكل</button>
+          <div class="image-upload-actions">
+            <label for="p-image" class="btn btn-ghost btn-small file-label">اختيار صورة</label>
+            <input type="file" id="p-image" accept="image/*" hidden>
+            <button type="button" id="remove-image-btn" class="btn btn-outline-danger btn-small" disabled>إزالة الصورة</button>
           </div>
         </div>
-        <small class="form-hint">يمكنك اختيار 3 صور كحد أقصى (JPG, PNG)</small>
       </div>
-      <button type="submit" class="btn btn-gold btn-block">✨ إضافة المنتج</button>
+
+      <button type="submit" class="btn btn-gold btn-block">إضافة المنتج</button>
     </form>
   </section>
 
-  <!-- ===== إدارة المنتجات ===== -->
   <section class="dash-panel manage-panel">
     <div class="panel-head">
       <span class="diamond-bullet"></span>
-      <h2>📦 المنتجات الحالية</h2>
+      <h2>المنتجات الحالية</h2>
     </div>
+
     <div id="dash-product-list" class="dash-product-list"></div>
+
     <div id="dash-empty-state" class="empty-state" hidden>
       <span class="diamond-icon-lg" aria-hidden="true"></span>
       <p>لم تضيفي أي منتج بعد</p>
       <span class="empty-sub">استخدمي النموذج أعلاه لإضافة أول قطعة</span>
-    </div>
-  </section>
-
-  <!-- ===== الطلبات ===== -->
-  <section class="dash-panel orders-panel">
-    <div class="panel-head">
-      <span class="diamond-bullet"></span>
-      <h2>📩 الطلبات الواردة</h2>
-    </div>
-    <div id="dash-orders-list" class="dash-orders-list"></div>
-    <div id="dash-orders-empty" class="empty-state" hidden>
-      <p>لا توجد طلبات بعد</p>
-    </div>
-  </section>
-
-  <!-- ===== إدارة المسابقات ===== -->
-  <section class="dash-panel contest-panel">
-    <div class="panel-head">
-      <span class="diamond-bullet"></span>
-      <h2>🎁 إدارة المسابقة</h2>
-    </div>
-    
-    <!-- إضافة مسابقة جديدة -->
-    <form id="contest-setup-form" class="contest-setup-form">
-      <div class="form-row">
-        <label for="contest-prize">الجائزة</label>
-        <input type="text" id="contest-prize" placeholder="مثال: حقيبة يد فاخرة" required>
-      </div>
-      <div class="form-row">
-        <label for="contest-description">وصف المسابقة</label>
-        <textarea id="contest-description" rows="2" placeholder="وصف المسابقة..."></textarea>
-      </div>
-      <button type="submit" class="btn btn-gold btn-small">🎯 تحديث المسابقة</button>
-    </form>
-
-    <!-- المشتركين -->
-    <h3 style="margin-top: 1.5rem;">👥 المشتركين</h3>
-    <div id="dash-contestants-list" class="dash-contestants-list"></div>
-    <div id="dash-contestants-empty" class="empty-state" hidden>
-      <p>لا يوجد مشتركين في المسابقة حالياً</p>
-    </div>
-    <button id="pick-winner-btn" class="btn btn-gold btn-block" style="margin-top: 1rem;" hidden>🎉 اختيار فائز عشوائي</button>
-    <div id="contest-winner-dash" class="contest-winner-dash" hidden>
-      🏆 الفائزة: <span id="winner-name-dash"></span>
-    </div>
-  </section>
-
-  <!-- ===== التقييمات ===== -->
-  <section class="dash-panel reviews-panel">
-    <div class="panel-head">
-      <span class="diamond-bullet"></span>
-      <h2>⭐ تقييمات الزبائن</h2>
-    </div>
-    <div id="dash-reviews-list" class="dash-reviews-list"></div>
-    <div id="dash-reviews-empty" class="empty-state" hidden>
-      <p>لا توجد تقييمات بعد</p>
     </div>
   </section>
 
