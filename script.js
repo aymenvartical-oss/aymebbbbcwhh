@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (النسخة النهائية المصححة بالكامل)
+   SAC DIAMANT — script.js (النسخة المصححة بالكامل)
    ===================================================================== */
 
 // ============================================================
@@ -15,8 +15,7 @@ import {
   updateDoc,
   onSnapshot,
   query,
-  orderBy,
-  where
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import {
   getAuth,
@@ -121,7 +120,8 @@ function listenToProducts(callback) {
   return onSnapshot(q, (snapshot) => {
     const products = [];
     snapshot.forEach((doc) => {
-      products.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      products.push({ id: doc.id, ...data });
     });
     callback(products);
   });
@@ -161,7 +161,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور — Cloudinary (مصححة بالكامل)
+// 7. دوال رفع الصور — Cloudinary
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -213,8 +213,7 @@ async function uploadImageToCloudinary(imageDataUrl) {
     }
 
     console.error('❌ خطأ Cloudinary:', data);
-    let friendlyError = data.error?.message || 'فشل رفع الصورة';
-    return { success: false, error: friendlyError };
+    return { success: false, error: data.error?.message || 'فشل رفع الصورة' };
   } catch (error) {
     console.error("❌ خطأ في رفع الصورة:", error);
     return { success: false, error: error.message || 'تعذّر الاتصال بالخادم' };
@@ -453,21 +452,22 @@ function renderProductGrid(products) {
     const card = document.createElement('article');
     card.className = 'product-card';
 
-    // ✅ فحص جميع الاحتمالات للحصول على رابط الصورة
+    // ✅ الحصول على رابط الصورة من الحقل الصحيح
     let imageUrl = null;
     if (p.image && typeof p.image === 'string' && p.image.startsWith('http')) {
       imageUrl = p.image;
     } else if (p.imageUrl && typeof p.imageUrl === 'string' && p.imageUrl.startsWith('http')) {
       imageUrl = p.imageUrl;
-    } else if (p.images && Array.isArray(p.images) && p.images.length > 0 && p.images[0]?.startsWith('http')) {
-      imageUrl = p.images[0];
     }
-    
-    console.log(`🖼️ [${p.name}] رابط الصورة:`, imageUrl);
+
+    // ✅ طباعة الرابط للتحقق
+    console.log(`🖼️ [${p.name}] image:`, p.image);
+    console.log(`🖼️ [${p.name}] imageUrl:`, p.imageUrl);
+    console.log(`🖼️ [${p.name}] الرابط المستخدم:`, imageUrl);
 
     let imageHTML = '';
     if (imageUrl) {
-      imageHTML = `<img src="${imageUrl}" alt="${escapeAttr(p.name)}" loading="lazy" onerror="console.error('❌ فشل تحميل الصورة:', this.src); this.style.display='none';this.parentElement.innerHTML='<span class=\\'diamond-icon-lg\\' aria-hidden=\\'true\\'></span>'">`;
+      imageHTML = `<img src="${imageUrl}" alt="${escapeAttr(p.name)}" loading="lazy" onerror="console.error('❌ فشل تحميل صورة المنتج:', this.src); this.style.display='none';this.parentElement.innerHTML='<span class=\\'diamond-icon-lg\\' aria-hidden=\\'true\\'></span>'">`;
     } else {
       imageHTML = `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
     }
@@ -503,7 +503,7 @@ function renderStorefront(products) {
   storefrontProducts = products || [];
   console.log('📦 المنتجات المستلمة من Firebase:', storefrontProducts.length);
   storefrontProducts.forEach(p => {
-    console.log(`🖼️ ${p.name}: image =`, p.image);
+    console.log(`📦 ${p.name}: image =`, p.image);
   });
   renderCategoryChips(storefrontProducts);
   applyStorefrontFilters();
@@ -516,16 +516,25 @@ function renderContactLinks() {
 }
 
 // ============================================================
-// 10.2 Quick view modal
+// 10.2 Quick view modal (المصحح)
 // ============================================================
 function openQuickView(product) {
   const overlay = document.getElementById('quickView');
   if (!overlay) return;
 
+  // ✅ استخدام نفس الحقل image
+  let imageUrl = product.image || product.imageUrl || '';
+  console.log(`🔍 عرض تفاصيل ${product.name}:`, imageUrl);
+
   const imgEl = document.getElementById('qvImage');
   if (imgEl) {
-    imgEl.src = product.image || '';
+    imgEl.src = imageUrl;
     imgEl.alt = product.name;
+    imgEl.onerror = function() {
+      console.error('❌ فشل تحميل الصورة في الـ Modal:', this.src);
+      this.style.display = 'none';
+      this.parentElement.innerHTML = '<span class="diamond-icon-lg" aria-hidden="true"></span>';
+    };
   }
   const catEl = document.getElementById('qvCat');
   if (catEl) catEl.textContent = product.category || '';
@@ -689,7 +698,7 @@ function initDashboard() {
       price: Number(priceInput.value) || 0,
       category: categoryInput.value.trim(),
       description: descInput.value.trim(),
-      image: null
+      image: null  // ✅ سنخزن الرابط هنا
     };
 
     if (!productData.name) {
@@ -703,14 +712,14 @@ function initDashboard() {
     submitBtn.disabled = true;
 
     try {
-      // ✅ رفع الصورة أولاً
+      // ✅ رفع الصورة إلى Cloudinary والحصول على الرابط
       let imageUrl = null;
       if (pendingImage) {
         setUploadStatus('جاري رفع الصورة...', 'pending');
         const uploadResult = await uploadImage(pendingImage);
         if (uploadResult.success) {
-          imageUrl = uploadResult.url;
-          console.log('✅ تم رفع الصورة بنجاح:', imageUrl);
+          imageUrl = uploadResult.url;  // ✅ secure_url من Cloudinary
+          console.log('✅ تم رفع الصورة بنجاح، الرابط:', imageUrl);
           setUploadStatus('تم رفع الصورة ✓', 'success');
         } else {
           console.warn('⚠️ فشل رفع الصورة:', uploadResult.error);
@@ -719,8 +728,9 @@ function initDashboard() {
         }
       }
 
-      // ✅ حفظ المنتج مع رابط الصورة
+      // ✅ حفظ الرابط في productData.image
       productData.image = imageUrl;
+      console.log('📦 سيتم حفظ المنتج مع الصورة:', productData);
       
       const result = await addProduct(productData);
 
@@ -730,6 +740,8 @@ function initDashboard() {
         submitBtn.disabled = false;
         return;
       }
+
+      console.log('✅ تم إضافة المنتج بنجاح مع الرابط:', imageUrl);
 
       form.reset();
       pendingImage = null;
@@ -749,7 +761,7 @@ function initDashboard() {
 }
 
 // ============================================================
-// 11.1 تحميل المنتجات في لوحة التحكم (مصححة)
+// 11.1 تحميل المنتجات في لوحة التحكم
 // ============================================================
 function loadDashboardProducts() {
   const list = document.getElementById('dash-product-list');
@@ -770,16 +782,9 @@ function loadDashboardProducts() {
       row.className = 'dash-product-item';
       row.dataset.id = p.id;
 
-      let thumbUrl = null;
-      if (p.image && typeof p.image === 'string' && p.image.startsWith('http')) {
-        thumbUrl = p.image;
-      } else if (p.imageUrl && typeof p.imageUrl === 'string' && p.imageUrl.startsWith('http')) {
-        thumbUrl = p.imageUrl;
-      } else if (p.images && Array.isArray(p.images) && p.images.length > 0 && p.images[0]?.startsWith('http')) {
-        thumbUrl = p.images[0];
-      }
+      let thumbUrl = p.image || p.imageUrl || null;
 
-      const thumbHTML = thumbUrl
+      const thumbHTML = thumbUrl && thumbUrl.startsWith('http')
         ? `<img src="${thumbUrl}" alt="${escapeAttr(p.name)}" onerror="this.style.display='none'">`
         : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
