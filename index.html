@@ -6,13 +6,14 @@
 <title>Sac Diamant — متجر أنيق</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="facet-cursor" id="facetCursor" aria-hidden="true"></div>
 
+<!-- ===== HEADER ===== -->
 <header class="site-header">
   <a href="#top" class="logo">
     <span class="logo-facet" aria-hidden="true"></span>
@@ -20,6 +21,8 @@
   </a>
   <nav class="main-nav">
     <a href="#products">المجموعة</a>
+    <a href="#reviews">التقييمات</a>
+    <a href="#contest">المسابقة</a>
     <a href="#about">من نحن</a>
     <a href="#contact">تواصل</a>
   </nav>
@@ -29,6 +32,7 @@
 </header>
 
 <main>
+  <!-- ===== HERO SECTION ===== -->
   <section class="hero" id="top">
     <div class="hero-facets" aria-hidden="true">
       <span class="facet f1"></span>
@@ -46,20 +50,33 @@
         <a href="#contact" class="btn btn-ghost">تواصلي معي</a>
       </div>
     </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-number">+120</span>
+        <span class="stat-label">زبونة سعيدة</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">⭐ 4.9</span>
+        <span class="stat-label">تقييم العملاء</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">🎁</span>
+        <span class="stat-label">مسابقة شهرية</span>
+      </div>
+    </div>
     <div class="scroll-hint" aria-hidden="true">
       <span class="diamond-bullet small"></span>
     </div>
   </section>
 
+  <!-- ===== PRODUCTS SECTION ===== -->
   <section class="products" id="products">
     <div class="section-head">
       <p class="eyebrow"><span class="diamond-bullet"></span> المتوفر الآن</p>
       <h2>المجموعة</h2>
       <p class="section-sub">قطع بكمية محدودة — ما ينفد لا يعود</p>
     </div>
-
     <div id="product-grid" class="product-grid"></div>
-
     <div id="empty-state" class="empty-state" hidden>
       <span class="diamond-icon-lg" aria-hidden="true"></span>
       <p>لا توجد منتجات معروضة حالياً</p>
@@ -67,6 +84,66 @@
     </div>
   </section>
 
+  <!-- ===== REVIEWS SECTION ===== -->
+  <section class="reviews" id="reviews">
+    <div class="section-head">
+      <p class="eyebrow"><span class="diamond-bullet"></span> آراء الزبائن</p>
+      <h2>تقييماتكم تهمنا</h2>
+      <p class="section-sub">شاركينا رأيكِ في المنتجات</p>
+    </div>
+    <div class="reviews-container">
+      <div id="reviews-list" class="reviews-list"></div>
+      <form id="review-form" class="review-form">
+        <h3>أضيفي تقييمك</h3>
+        <div class="stars-input" id="stars-input">
+          <span data-star="5">⭐</span>
+          <span data-star="4">⭐</span>
+          <span data-star="3">⭐</span>
+          <span data-star="2">⭐</span>
+          <span data-star="1">⭐</span>
+        </div>
+        <input type="hidden" id="review-stars" value="5">
+        <div class="form-row">
+          <input type="text" id="review-name" placeholder="اسمك" required>
+        </div>
+        <div class="form-row">
+          <textarea id="review-text" rows="3" placeholder="شاركينا تجربتك مع المنتج..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-gold btn-block">نشر التقييم</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== CONTEST SECTION ===== -->
+  <section class="contest" id="contest">
+    <div class="contest-inner">
+      <span class="diamond-icon-lg" aria-hidden="true"></span>
+      <h2>🎉 مسابقة الشهر</h2>
+      <p class="contest-sub">شاركي في المسابقة واربحي حقيبة مجانية!</p>
+      <div class="contest-prize">
+        <span class="prize-bag">👜</span>
+        <span class="prize-label">حقيبة يد فاخرة</span>
+      </div>
+      <form id="contest-form" class="contest-form">
+        <div class="form-row">
+          <input type="text" id="contest-name" placeholder="اسمك الكامل" required>
+        </div>
+        <div class="form-row">
+          <input type="email" id="contest-email" placeholder="بريدك الإلكتروني" required>
+        </div>
+        <div class="form-row">
+          <input type="text" id="contest-phone" placeholder="رقم هاتفك (واتساب)">
+        </div>
+        <div class="form-row">
+          <textarea id="contest-answer" rows="3" placeholder="لماذا تحبين هذه الحقيبة؟" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-gold btn-block">اشتركي في المسابقة 🎁</button>
+      </form>
+      <p class="contest-winner" id="contest-winner" hidden>🏆 الفائزة السابقة: <span id="winner-name">سارة أحمد</span></p>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT SECTION ===== -->
   <section class="about" id="about">
     <div class="about-inner">
       <span class="diamond-icon-lg" aria-hidden="true"></span>
@@ -75,12 +152,27 @@
     </div>
   </section>
 
+  <!-- ===== CONTACT SECTION ===== -->
   <section class="contact" id="contact">
     <div class="contact-inner">
       <p class="eyebrow"><span class="diamond-bullet"></span> جاهزة لطلبك</p>
       <h2>تواصلي للطلب</h2>
       <p class="section-sub">أسرع طريقة هي واتساب — اضغطي على "اطلب" تحت أي قطعة، أو راسليني مباشرة من هنا</p>
       <div class="contact-links" id="contact-links"></div>
+      <!-- نموذج طلب سريع -->
+      <form id="quick-order-form" class="quick-order-form">
+        <h3>اطلبي الآن</h3>
+        <div class="form-row">
+          <input type="text" id="order-name" placeholder="اسمك" required>
+        </div>
+        <div class="form-row">
+          <input type="text" id="order-product" placeholder="اسم المنتج المطلوب" required>
+        </div>
+        <div class="form-row">
+          <textarea id="order-note" rows="3" placeholder="أي تفاصيل إضافية..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-gold btn-block">إرسال الطلب 📩</button>
+      </form>
     </div>
   </section>
 </main>
@@ -88,7 +180,10 @@
 <footer class="site-footer">
   <span class="diamond-bullet small" aria-hidden="true"></span>
   <p>© <span id="year"></span> Sac Diamant — جميع الحقوق محفوظة</p>
-  <a href="dashboard.html" class="dash-link">لوحة التحكم</a>
+  <div class="footer-links">
+    <a href="dashboard.html" class="dash-link">لوحة التحكم</a>
+    <a href="#top" class="dash-link">↑ العودة للأعلى</a>
+  </div>
 </footer>
 
 <script type="module" src="script.js"></script>
