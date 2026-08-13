@@ -41,10 +41,11 @@
 <!-- Dashboard main (hidden until login) -->
 <main id="dashboard-main" class="dashboard-main" hidden>
 
+  <!-- ===== إضافة منتج ===== -->
   <section class="dash-panel add-panel sticky">
     <div class="panel-head">
       <span class="diamond-bullet"></span>
-      <h2>إضافة منتج جديد</h2>
+      <h2>➕ إضافة منتج جديد</h2>
     </div>
 
     <form id="product-form" class="product-form">
@@ -77,22 +78,23 @@
             <span class="preview-placeholder">لا توجد صورة</span>
           </div>
           <div class="image-upload-actions">
-            <label for="p-image" class="btn btn-ghost btn-small file-label">اختيار صورة</label>
+            <label for="p-image" class="btn btn-ghost btn-small file-label">📁 اختيار صورة</label>
             <input type="file" id="p-image" accept="image/*" hidden>
-            <button type="button" id="remove-image-btn" class="btn btn-outline-danger btn-small" disabled>إزالة الصورة</button>
+            <button type="button" id="remove-image-btn" class="btn btn-outline-danger btn-small" disabled>🗑️ إزالة</button>
           </div>
           <p class="upload-status" id="upload-status"></p>
         </div>
       </div>
 
-      <button type="submit" class="btn btn-gold btn-block">إضافة المنتج</button>
+      <button type="submit" class="btn btn-gold btn-block">✨ إضافة المنتج</button>
     </form>
   </section>
 
+  <!-- ===== إدارة المنتجات ===== -->
   <section class="dash-panel manage-panel">
     <div class="panel-head">
       <span class="diamond-bullet"></span>
-      <h2>المنتجات الحالية</h2>
+      <h2>📦 المنتجات الحالية</h2>
     </div>
 
     <div id="dash-product-list" class="dash-product-list"></div>
@@ -101,6 +103,63 @@
       <span class="diamond-icon-lg" aria-hidden="true"></span>
       <p>لم تضيفي أي منتج بعد</p>
       <span class="empty-sub">استخدمي النموذج أعلاه لإضافة أول قطعة</span>
+    </div>
+  </section>
+
+  <!-- ===== 🎁 نظام المسابقات ===== -->
+  <section class="dash-panel contest-panel">
+    <div class="panel-head">
+      <span class="diamond-bullet"></span>
+      <h2>🎁 المسابقات</h2>
+    </div>
+
+    <!-- إضافة مسابقة جديدة -->
+    <form id="contest-form" class="contest-form">
+      <h3>➕ إضافة مسابقة جديدة</h3>
+      <div class="form-row">
+        <label for="c-title">عنوان المسابقة</label>
+        <input type="text" id="c-title" placeholder="مثال: مسابقة الشهر - حقيبة فاخرة" required>
+      </div>
+
+      <div class="form-row">
+        <label for="c-prize-name">اسم الجائزة</label>
+        <input type="text" id="c-prize-name" placeholder="مثال: حقيبة يد جلدية فاخرة" required>
+      </div>
+
+      <div class="form-row">
+        <label for="c-prize-desc">وصف الجائزة</label>
+        <textarea id="c-prize-desc" rows="3" placeholder="تفاصيل الجائزة..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <label for="c-prize-image">صورة الجائزة</label>
+        <div class="image-upload">
+          <div class="image-preview" id="contest-image-preview">
+            <span class="preview-placeholder">لا توجد صورة</span>
+          </div>
+          <div class="image-upload-actions">
+            <label for="c-prize-image" class="btn btn-ghost btn-small file-label">📁 اختيار صورة</label>
+            <input type="file" id="c-prize-image" accept="image/*" hidden>
+            <button type="button" id="contest-remove-image" class="btn btn-outline-danger btn-small" disabled>🗑️ إزالة</button>
+          </div>
+          <p class="upload-status" id="contest-upload-status"></p>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="c-end-date">تاريخ انتهاء المسابقة</label>
+        <input type="date" id="c-end-date" required>
+      </div>
+
+      <button type="submit" class="btn btn-gold btn-block">🎯 إضافة المسابقة</button>
+    </form>
+
+    <!-- قائمة المسابقات -->
+    <h3>📋 المسابقات الحالية</h3>
+    <div id="contest-list" class="contest-list"></div>
+    <div id="contest-empty" class="empty-state" hidden>
+      <p>لا توجد مسابقات حالياً</p>
+      <span class="empty-sub">أضيفي مسابقة جديدة لجذب الزبائن 🎁</span>
     </div>
   </section>
 
