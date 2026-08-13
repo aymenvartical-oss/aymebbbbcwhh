@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (Firebase + Cloudinary + سلة تسوق)
+   SAC DIAMANT — script.js (مع Proxy لتجاوز حظر Cloudinary)
    ===================================================================== */
 
 // ============================================================
@@ -24,7 +24,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ============================================================
-// 2. إعداد Firebase — بدون أي تغيير
+// 2. إعداد Firebase
 // ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDmDukDO-iVEOwaE2XF9PxwbFg9elplIqM",
@@ -42,9 +42,6 @@ const auth = getAuth(app);
 
 // ============================================================
 // 3. إعدادات Cloudinary
-//    مهم: الرفع هنا "Unsigned" عبر upload_preset فقط —
-//    لا تضيفي أبداً API Key أو API Secret هنا، فهذا الملف
-//    مرئي للجميع في المتصفح ولا داعي لهما إطلاقاً بهذه الطريقة.
 // ============================================================
 const CLOUDINARY_CLOUD_NAME = 'n9xuxykp';
 const CLOUDINARY_UPLOAD_PRESET = 'sac_diamant';
@@ -100,7 +97,7 @@ function escapeAttr(str) {
 }
 
 // ============================================================
-// 5.1 إشعارات (Toast) — تحل محل alert() في أغلب الحالات
+// 5.1 إشعارات (Toast)
 // ============================================================
 function toast(message, type = 'info') {
   const stack = document.getElementById('toastStack');
@@ -113,7 +110,7 @@ function toast(message, type = 'info') {
 }
 
 // ============================================================
-// 6. دوال Firebase — بدون أي تغيير في المنطق
+// 6. دوال Firebase
 // ============================================================
 function listenToProducts(callback) {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -160,8 +157,7 @@ async function deleteProduct(productId) {
 }
 
 // ============================================================
-// 7. دوال رفع الصور — Cloudinary (Unsigned فقط)
-//    تم دمج الكود من deepseek_javascript_20260812_f8d0cc.js
+// 7. دوال رفع الصور — Cloudinary
 // ============================================================
 function compressImage(dataUrl, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -233,12 +229,31 @@ async function uploadImage(productId, imageDataUrl) {
 }
 
 async function deleteImage(productId) {
-  console.log('تم تجاهل حذف الصورة (Cloudinary يتطلب API Secret للحذف)');
+  console.log('تم تجاهل حذف الصورة');
   return { success: true };
 }
 
 // ============================================================
-// 8. عناصر مشتركة
+// 8. ✅ دوال عرض الصور - مع Proxy لتجاوز حظر Cloudinary
+// ============================================================
+function getImageUrl(product) {
+  let url = product.image || product.imageUrl || '';
+  if (!url || typeof url !== 'string') return '';
+
+  // ✅ إذا كان الرابط من Cloudinary، استخدم Proxy
+  if (url.includes('res.cloudinary.com')) {
+    // استخدام Proxy مجاني لتجاوز الحظر
+    const proxyUrl = 'https://images.weserv.nl/?url=';
+    const encodedUrl = encodeURIComponent(url);
+    console.log(`🔄 Proxy للصورة: ${url}`);
+    return `${proxyUrl}${encodedUrl}`;
+  }
+
+  return url;
+}
+
+// ============================================================
+// 9. عناصر مشتركة
 // ============================================================
 function initShared() {
   const yearEl = document.getElementById('year');
@@ -271,7 +286,7 @@ function initShared() {
 }
 
 // ============================================================
-// 9. سلة التسوق
+// 10. سلة التسوق
 // ============================================================
 const CART_KEY = 'sacDiamantCart';
 let cart = [];
@@ -376,7 +391,7 @@ function checkoutViaWhatsApp() {
 
 function initCart() {
   const cartItemsEl = document.getElementById('cartItems');
-  if (!cartItemsEl) return; // صفحة لا تحتوي سلة (لوحة التحكم)
+  if (!cartItemsEl) return;
 
   loadCart();
   renderCartUI();
@@ -398,7 +413,7 @@ function initCart() {
 }
 
 // ============================================================
-// 10. المتجر (index.html)
+// 11. المتجر (index.html)
 // ============================================================
 let storefrontProducts = [];
 let currentCategory = 'الكل';
@@ -441,6 +456,9 @@ function applyStorefrontFilters() {
   renderProductGrid(filtered);
 }
 
+// ============================================================
+// 11.1 عرض المنتجات (مع Proxy)
+// ============================================================
 function renderProductGrid(products) {
   const grid = document.getElementById('product-grid');
   if (!grid) return;
@@ -458,8 +476,12 @@ function renderProductGrid(products) {
     const card = document.createElement('article');
     card.className = 'product-card';
 
-    const imageHTML = p.image
-      ? `<img src="${p.image}" alt="${escapeAttr(p.name)}" loading="lazy">`
+    // ✅ استخدام Proxy للحصول على رابط الصورة
+    const imageUrl = getImageUrl(p);
+    console.log(`🖼️ [${p.name}] الرابط المستخدم:`, imageUrl);
+
+    const imageHTML = imageUrl
+      ? `<img src="${imageUrl}" alt="${escapeAttr(p.name)}" loading="lazy" onerror="console.error('❌ فشل تحميل الصورة:', this.src); this.style.display='none';this.parentElement.innerHTML='<span class=\\'diamond-icon-lg\\' aria-hidden=\\'true\\'></span>'">`
       : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
     const catHTML = p.category ? `<span class="product-cat">${escapeHTML(p.category)}</span>` : '';
@@ -501,13 +523,27 @@ function renderContactLinks() {
   el.innerHTML = orderRowHTML(buildOrderLinks(null));
 }
 
-// ---- Quick view modal ----
+// ============================================================
+// 11.2 Quick view modal (مع Proxy)
+// ============================================================
 function openQuickView(product) {
   const overlay = document.getElementById('quickView');
   if (!overlay) return;
 
-  document.getElementById('qvImage').src = product.image || '';
-  document.getElementById('qvImage').alt = product.name;
+  const imageUrl = getImageUrl(product);
+  console.log(`🔍 عرض تفاصيل ${product.name}:`, imageUrl);
+
+  const imgEl = document.getElementById('qvImage');
+  if (imgEl) {
+    imgEl.src = imageUrl;
+    imgEl.alt = product.name;
+    imgEl.onerror = function() {
+      console.error('❌ فشل تحميل الصورة في الـ Modal:', this.src);
+      this.style.display = 'none';
+      this.parentElement.innerHTML = '<span class="diamond-icon-lg" aria-hidden="true"></span>';
+    };
+  }
+
   document.getElementById('qvCat').textContent = product.category || '';
   document.getElementById('qvName').textContent = product.name;
   document.getElementById('qvPrice').textContent = formatPrice(product.price);
@@ -550,7 +586,7 @@ function initStorefrontSearch() {
 }
 
 // ============================================================
-// 11. لوحة التحكم (dashboard.html)
+// 12. لوحة التحكم (dashboard.html)
 // ============================================================
 function setUploadStatus(text, type) {
   const el = document.getElementById('upload-status');
@@ -696,7 +732,7 @@ function initDashboard() {
         } else {
           console.warn('تم إضافة المنتج لكن فشل رفع الصورة:', uploadResult.error);
           setUploadStatus('فشل رفع الصورة: ' + uploadResult.error, 'error');
-          toast('تم إضافة المنتج لكن فشل رفع الصورة — يمكنك تغييرها من القائمة أدناه', 'error');
+          toast('تم إضافة المنتج لكن فشل رفع الصورة', 'error');
         }
       }
 
@@ -735,8 +771,9 @@ function loadDashboardProducts() {
       row.className = 'dash-product-item';
       row.dataset.id = p.id;
 
-      const thumbHTML = p.image
-        ? `<img src="${p.image}" alt="${escapeAttr(p.name)}">`
+      const imageUrl = getImageUrl(p);
+      const thumbHTML = imageUrl
+        ? `<img src="${imageUrl}" alt="${escapeAttr(p.name)}" onerror="this.style.display='none'">`
         : `<span class="diamond-icon-lg" aria-hidden="true"></span>`;
 
       row.innerHTML = `
@@ -843,7 +880,7 @@ function attachDashboardListeners(list) {
 }
 
 // ============================================================
-// 12. تشغيل كل شيء
+// 13. تشغيل كل شيء
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   initShared();
