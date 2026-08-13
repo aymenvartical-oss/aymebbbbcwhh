@@ -17,7 +17,10 @@
     <span class="logo-text">SAC <em>DIAMANT</em></span>
   </a>
   <span class="dash-title">لوحة التحكم</span>
-  <a href="index.html" class="btn btn-ghost btn-small">عرض المتجر</a>
+  <div class="dash-actions">
+    <a href="index.html" class="btn btn-ghost btn-small">عرض المتجر</a>
+    <button id="logout-btn" class="btn btn-outline-danger btn-small">تسجيل خروج</button>
+  </div>
 </header>
 
 <!-- Login gate -->
@@ -38,7 +41,7 @@
   </form>
 </section>
 
-<!-- Dashboard main (hidden until login) -->
+<!-- Dashboard main -->
 <main id="dashboard-main" class="dashboard-main" hidden>
 
   <!-- ===== إضافة منتج ===== -->
@@ -106,60 +109,73 @@
     </div>
   </section>
 
-  <!-- ===== 🎁 نظام المسابقات ===== -->
+  <!-- ===== 🔒 قسم المسابقات (مستقل بكلمة مرور) ===== -->
   <section class="dash-panel contest-panel">
     <div class="panel-head">
       <span class="diamond-bullet"></span>
       <h2>🎁 المسابقات</h2>
     </div>
 
-    <!-- إضافة مسابقة جديدة -->
-    <form id="contest-form" class="contest-form">
-      <h3>➕ إضافة مسابقة جديدة</h3>
-      <div class="form-row">
-        <label for="c-title">عنوان المسابقة</label>
-        <input type="text" id="c-title" placeholder="مثال: مسابقة الشهر - حقيبة فاخرة" required>
+    <!-- قفل المسابقات -->
+    <div id="contest-lock" class="contest-lock">
+      <p>🔒 هذا القسم محمي بكلمة مرور</p>
+      <div class="contest-lock-input">
+        <input type="password" id="contest-password" placeholder="أدخل كلمة مرور المسابقات">
+        <button id="contest-unlock-btn" class="btn btn-gold btn-small">فتح</button>
       </div>
+      <p id="contest-lock-error" class="login-error" hidden>كلمة المرور غير صحيحة</p>
+    </div>
 
-      <div class="form-row">
-        <label for="c-prize-name">اسم الجائزة</label>
-        <input type="text" id="c-prize-name" placeholder="مثال: حقيبة يد جلدية فاخرة" required>
-      </div>
-
-      <div class="form-row">
-        <label for="c-prize-desc">وصف الجائزة</label>
-        <textarea id="c-prize-desc" rows="3" placeholder="تفاصيل الجائزة..."></textarea>
-      </div>
-
-      <div class="form-row">
-        <label for="c-prize-image">صورة الجائزة</label>
-        <div class="image-upload">
-          <div class="image-preview" id="contest-image-preview">
-            <span class="preview-placeholder">لا توجد صورة</span>
-          </div>
-          <div class="image-upload-actions">
-            <label for="c-prize-image" class="btn btn-ghost btn-small file-label">📁 اختيار صورة</label>
-            <input type="file" id="c-prize-image" accept="image/*" hidden>
-            <button type="button" id="contest-remove-image" class="btn btn-outline-danger btn-small" disabled>🗑️ إزالة</button>
-          </div>
-          <p class="upload-status" id="contest-upload-status"></p>
+    <!-- محتوى المسابقات (مخفي حتى فتح القفل) -->
+    <div id="contest-content" hidden>
+      <!-- إضافة مسابقة جديدة -->
+      <form id="contest-form" class="contest-form">
+        <h3>➕ إضافة مسابقة جديدة</h3>
+        <div class="form-row">
+          <label for="c-title">عنوان المسابقة</label>
+          <input type="text" id="c-title" placeholder="مثال: مسابقة الشهر - حقيبة فاخرة" required>
         </div>
+
+        <div class="form-row">
+          <label for="c-prize-name">اسم الجائزة</label>
+          <input type="text" id="c-prize-name" placeholder="مثال: حقيبة يد جلدية فاخرة" required>
+        </div>
+
+        <div class="form-row">
+          <label for="c-prize-desc">وصف الجائزة</label>
+          <textarea id="c-prize-desc" rows="3" placeholder="تفاصيل الجائزة..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <label for="c-prize-image">صورة الجائزة</label>
+          <div class="image-upload">
+            <div class="image-preview" id="contest-image-preview">
+              <span class="preview-placeholder">لا توجد صورة</span>
+            </div>
+            <div class="image-upload-actions">
+              <label for="c-prize-image" class="btn btn-ghost btn-small file-label">📁 اختيار صورة</label>
+              <input type="file" id="c-prize-image" accept="image/*" hidden>
+              <button type="button" id="contest-remove-image" class="btn btn-outline-danger btn-small" disabled>🗑️ إزالة</button>
+            </div>
+            <p class="upload-status" id="contest-upload-status"></p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="c-end-date">تاريخ انتهاء المسابقة</label>
+          <input type="date" id="c-end-date" required>
+        </div>
+
+        <button type="submit" class="btn btn-gold btn-block">🎯 إضافة المسابقة</button>
+      </form>
+
+      <!-- قائمة المسابقات -->
+      <h3>📋 المسابقات الحالية</h3>
+      <div id="contest-list" class="contest-list"></div>
+      <div id="contest-empty" class="empty-state" hidden>
+        <p>لا توجد مسابقات حالياً</p>
+        <span class="empty-sub">أضيفي مسابقة جديدة لجذب الزبائن 🎁</span>
       </div>
-
-      <div class="form-row">
-        <label for="c-end-date">تاريخ انتهاء المسابقة</label>
-        <input type="date" id="c-end-date" required>
-      </div>
-
-      <button type="submit" class="btn btn-gold btn-block">🎯 إضافة المسابقة</button>
-    </form>
-
-    <!-- قائمة المسابقات -->
-    <h3>📋 المسابقات الحالية</h3>
-    <div id="contest-list" class="contest-list"></div>
-    <div id="contest-empty" class="empty-state" hidden>
-      <p>لا توجد مسابقات حالياً</p>
-      <span class="empty-sub">أضيفي مسابقة جديدة لجذب الزبائن 🎁</span>
     </div>
   </section>
 
