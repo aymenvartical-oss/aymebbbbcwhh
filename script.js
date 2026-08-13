@@ -1,5 +1,5 @@
 /* =====================================================================
-   SAC DIAMANT — script.js (مع Proxy ونظام المسابقات)
+   SAC DIAMANT — script.js (مع Proxy ونظام المسابقات المحمي)
    ===================================================================== */
 
 // ============================================================
@@ -15,13 +15,13 @@ import {
   updateDoc,
   onSnapshot,
   query,
-  orderBy,
-  where
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import {
   getAuth,
   signInWithEmailAndPassword,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ============================================================
@@ -317,6 +317,15 @@ function initShared() {
     searchToggle.addEventListener('click', () => {
       const isOpen = searchBox.classList.toggle('open');
       if (isOpen && headerSearchInput) headerSearchInput.focus();
+    });
+  }
+
+  // تسجيل خروج
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      signOut(auth);
+      toast('تم تسجيل الخروج', 'info');
     });
   }
 }
@@ -630,6 +639,9 @@ function populateCategorySuggestions(products) {
   datalist.innerHTML = Array.from(set).map(c => `<option value="${escapeAttr(c)}"></option>`).join('');
 }
 
+// كلمة مرور المسابقات
+const CONTEST_PASSWORD = 'contest2026'; // غيّريها إلى ما يناسبك
+
 function initDashboard() {
   const loginGate = document.getElementById('login-gate');
   const dashboardMain = document.getElementById('dashboard-main');
@@ -645,6 +657,7 @@ function initDashboard() {
     dashboardMain.hidden = false;
     loadDashboardProducts();
     loadDashboardContests();
+    initContestLock();
   }
 
   function hideDashboard() {
@@ -679,7 +692,45 @@ function initDashboard() {
 }
 
 // ============================================================
-// 12.1 نموذج إضافة منتج
+// 12.1 قفل المسابقات
+// ============================================================
+function initContestLock() {
+  const lockDiv = document.getElementById('contest-lock');
+  const contentDiv = document.getElementById('contest-content');
+  const unlockBtn = document.getElementById('contest-unlock-btn');
+  const passwordInput = document.getElementById('contest-password');
+  const errorEl = document.getElementById('contest-lock-error');
+
+  if (!lockDiv || !contentDiv) return;
+
+  // التحقق من وجود جلسة مفتوحة
+  if (sessionStorage.getItem('contestUnlocked') === 'true') {
+    lockDiv.hidden = true;
+    contentDiv.hidden = false;
+    return;
+  }
+
+  unlockBtn.addEventListener('click', () => {
+    const entered = passwordInput.value;
+    if (entered === CONTEST_PASSWORD) {
+      sessionStorage.setItem('contestUnlocked', 'true');
+      lockDiv.hidden = true;
+      contentDiv.hidden = false;
+      errorEl.hidden = true;
+      toast('🔓 تم فتح قسم المسابقات', 'success');
+    } else {
+      errorEl.hidden = false;
+      toast('كلمة المرور غير صحيحة', 'error');
+    }
+  });
+
+  passwordInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') unlockBtn.click();
+  });
+}
+
+// ============================================================
+// 12.2 نموذج إضافة منتج
 // ============================================================
 function initProductForm() {
   const form = document.getElementById('product-form');
@@ -794,7 +845,7 @@ function initProductForm() {
 }
 
 // ============================================================
-// 12.2 نموذج إضافة مسابقة
+// 12.3 نموذج إضافة مسابقة
 // ============================================================
 function initContestForm() {
   const form = document.getElementById('contest-form');
@@ -810,7 +861,6 @@ function initContestForm() {
 
   let pendingImage = null;
 
-  // تعيين تاريخ افتراضي (بعد شهر)
   const defaultDate = new Date();
   defaultDate.setMonth(defaultDate.getMonth() + 1);
   endDateInput.value = defaultDate.toISOString().split('T')[0];
@@ -874,7 +924,6 @@ function initContestForm() {
     submitBtn.disabled = true;
 
     try {
-      // 1. رفع الصورة أولاً
       let imageUrl = null;
       if (pendingImage) {
         setUploadStatus('جاري رفع الصورة...', 'pending', 'contest-upload-status');
@@ -890,7 +939,6 @@ function initContestForm() {
 
       contestData.prizeImage = imageUrl;
 
-      // 2. إضافة المسابقة
       const result = await addContest(contestData);
 
       if (!result.success) {
@@ -906,7 +954,6 @@ function initContestForm() {
       removeImageBtn.disabled = true;
       setUploadStatus('', '', 'contest-upload-status');
 
-      // إعادة تعيين التاريخ الافتراضي
       const defaultDate2 = new Date();
       defaultDate2.setMonth(defaultDate2.getMonth() + 1);
       document.getElementById('c-end-date').value = defaultDate2.toISOString().split('T')[0];
@@ -923,7 +970,7 @@ function initContestForm() {
 }
 
 // ============================================================
-// 12.3 تحميل المنتجات في لوحة التحكم
+// 12.4 تحميل المنتجات
 // ============================================================
 function loadDashboardProducts() {
   const list = document.getElementById('dash-product-list');
@@ -1053,7 +1100,7 @@ function attachDashboardListeners(list) {
 }
 
 // ============================================================
-// 12.4 تحميل المسابقات في لوحة التحكم
+// 12.5 تحميل المسابقات
 // ============================================================
 function loadDashboardContests() {
   const list = document.getElementById('contest-list');
@@ -1097,12 +1144,12 @@ function loadDashboardContests() {
         </div>
       `;
 
-      // حذف المسابقة
       item.querySelector('[data-action="delete-contest"]').addEventListener('click', async () => {
         if (!confirm('حذف هذه المسابقة نهائياً؟')) return;
         const result = await deleteContest(c.id);
         if (result.success) {
           toast('تم حذف المسابقة', 'success');
+          loadDashboardContests();
         } else {
           toast('فشل حذف المسابقة: ' + result.error, 'error');
         }
